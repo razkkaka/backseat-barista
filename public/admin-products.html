@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Kelola Produk — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}
+    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}
+    .sidebar{background:var(--brown);color:white;}
+    .sidebar-link{transition:all .2s; border-left: 3px solid transparent;}
+    .sidebar-link:hover, .sidebar-link.active{background:rgba(255,255,255,.05); border-left-color:var(--gold); color:var(--gold);}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}
+    input:focus, textarea:focus, select:focus{outline:none;border-color:var(--gold)!important;}
+    .modal-bg{background:rgba(26,14,7,.7);backdrop-filter:blur(8px);}
+  </style>
+</head>
+<body class="flex min-h-screen">
+  <aside class="sidebar fixed w-64 h-full flex flex-col hidden md:flex z-50">
+    <div class="p-6 pb-2 border-b border-white/10">
+      <div class="text-2xl mb-1">☕</div>
+      <div class="font-bold text-xl" style="font-family:'Cormorant Garamond',serif;">Backseat Admin</div>
+    </div>
+    <nav class="flex-1 py-4 space-y-1">
+      <a href="/admin" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">📊</span> Dashboard</a>
+      <a href="/admin-products" class="sidebar-link active flex items-center px-6 py-3 text-sm font-medium"><span class="w-6">📦</span> Produk</a>
+      <a href="/admin-orders" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">🛒</span> Pesanan</a>
+      <a href="/admin-customers" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">👥</span> Pelanggan</a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 md:ml-64 p-8">
+    <header class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold" style="font-family:'Cormorant Garamond',serif;">Manajemen Produk</h1>
+        <p class="text-stone-500 text-sm mt-1">Tambah, ubah, dan pantau stok minuman.</p>
+      </div>
+      <button onclick="openModal()" class="btn-gold px-4 py-2 rounded-xl text-white text-xs font-semibold shadow-md">+ Tambah Produk</button>
+    </header>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-stone-50 border-b border-stone-200 text-xs uppercase tracking-wider text-stone-500">
+              <th class="p-4 font-semibold">Produk</th>
+              <th class="p-4 font-semibold">Kategori</th>
+              <th class="p-4 font-semibold">Harga</th>
+              <th class="p-4 font-semibold">Stok</th>
+              <th class="p-4 font-semibold">Status</th>
+              <th class="p-4 font-semibold text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="text-sm divide-y divide-stone-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="product-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-6">
+        <h3 id="modal-title" class="text-2xl font-bold" style="font-family:'Cormorant Garamond',serif;">Tambah Produk</h3>
+        <button onclick="document.getElementById('product-modal').classList.add('hidden')" class="text-stone-400 text-xl">✕</button>
+      </div>
+      <form id="product-form" class="space-y-4" onsubmit="saveProduct(event)">
+        <input type="hidden" id="p-id">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2 md:col-span-1">
+            <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Nama Produk *</label>
+            <input type="text" id="p-name" required class="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm">
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Kategori *</label>
+            <select id="p-category" class="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm">
+              <option>Kopi</option><option>Non-Kopi</option><option>Snack</option>
+            </select>
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Harga (Rp) *</label>
+            <input type="number" id="p-price" required class="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm">
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Stok *</label>
+            <input type="number" id="p-stock" required class="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Deskripsi</label>
+          <textarea id="p-desc" rows="3" class="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase mb-1">Upload Gambar (opsional)</label>
+          <input type="file" id="p-image-file" accept="image/*" class="w-full text-sm">
+          <input type="hidden" id="p-image-url">
+        </div>
+        <div class="flex items-center gap-4 py-2">
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="p-active" checked> Aktif (Tampil di menu)</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="p-bestseller"> Label Bestseller</label>
+        </div>
+        <button type="submit" id="btn-save" class="btn-gold w-full text-white py-3 rounded-xl font-semibold text-sm shadow-md mt-4">Simpan Produk</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('bb_token');
+    const H = {'Authorization':'Bearer '+token, 'Content-Type':'application/json'};
+    if (!token) window.location.href='/login';
+    let products = [];
+
+    async function loadProducts() {
+      const res = await fetch('/api/admin/products', {headers:H});
+      products = await res.json();
+      document.getElementById('table-body').innerHTML = products.map(p => `
+        <tr class="hover:bg-stone-50 transition">
+          <td class="p-4 flex items-center gap-3">
+            <img src="${p.image_url}" class="w-10 h-10 rounded object-cover bg-stone-200" onerror="this.src='https://via.placeholder.com/40'">
+            <div>
+              <div class="font-semibold text-stone-800">${p.name} ${p.is_bestseller?'⭐':''}</div>
+            </div>
+          </td>
+          <td class="p-4 text-stone-600">${p.category}</td>
+          <td class="p-4 font-semibold text-stone-800">Rp ${Number(p.price).toLocaleString('id-ID')}</td>
+          <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${p.stock>0?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${p.stock}</span></td>
+          <td class="p-4">
+            <span class="px-2 py-1 rounded text-xs font-bold ${p.is_active?'bg-blue-100 text-blue-700':'bg-stone-200 text-stone-500'}">${p.is_active?'Aktif':'Nonaktif'}</span>
+          </td>
+          <td class="p-4 text-right">
+            <button onclick="editProduct(${p.id})" class="text-blue-500 hover:underline text-xs mr-2">Edit</button>
+            <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:underline text-xs">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal(id = null) {
+      const isEdit = id !== null;
+      document.getElementById('modal-title').textContent = isEdit ? 'Edit Produk' : 'Tambah Produk';
+      document.getElementById('p-id').value = id || '';
+      document.getElementById('product-form').reset();
+      
+      if (isEdit) {
+        const p = products.find(x => x.id === id);
+        document.getElementById('p-name').value = p.name;
+        document.getElementById('p-category').value = p.category;
+        document.getElementById('p-price').value = p.price;
+        document.getElementById('p-stock').value = p.stock;
+        document.getElementById('p-desc').value = p.description || '';
+        document.getElementById('p-image-url').value = p.image_url || '';
+        document.getElementById('p-active').checked = p.is_active === 1;
+        document.getElementById('p-bestseller').checked = p.is_bestseller === 1;
+      }
+      document.getElementById('product-modal').classList.remove('hidden');
+    }
+
+    function editProduct(id) { openModal(id); }
+
+    async function saveProduct(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      let imageUrl = document.getElementById('p-image-url').value;
+      const fileInput = document.getElementById('p-image-file');
+      if (fileInput.files[0]) {
+        const fd = new FormData(); fd.append('image', fileInput.files[0]);
+        const upRes = await fetch('/api/upload', {method:'POST', headers:{'Authorization':'Bearer '+token}, body:fd});
+        const upData = await upRes.json();
+        if (upRes.ok) imageUrl = upData.url;
+      }
+
+      const payload = {
+        name: document.getElementById('p-name').value,
+        category: document.getElementById('p-category').value,
+        price: document.getElementById('p-price').value,
+        stock: document.getElementById('p-stock').value,
+        description: document.getElementById('p-desc').value,
+        image_url: imageUrl,
+        is_active: document.getElementById('p-active').checked ? 1 : 0,
+        is_bestseller: document.getElementById('p-bestseller').checked ? 1 : 0
+      };
+
+      const id = document.getElementById('p-id').value;
+      const url = id ? '/api/admin/products/'+id : '/api/admin/products';
+      const method = id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {method, headers:H, body:JSON.stringify(payload)});
+      if (res.ok) {
+        document.getElementById('product-modal').classList.add('hidden');
+        loadProducts();
+      } else {
+        alert('Gagal menyimpan produk');
+      }
+      btn.disabled = false; btn.textContent = 'Simpan Produk';
+    }
+
+    async function deleteProduct(id) {
+      if(confirm('Yakin ingin menonaktifkan/menghapus produk ini?')) {
+        await fetch('/api/admin/products/'+id, {method:'DELETE', headers:H});
+        loadProducts();
+      }
+    }
+    loadProducts();
+  </script>
+</body>
+</html>

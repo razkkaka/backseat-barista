@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Kelola Pesanan — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}
+    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}
+    .sidebar{background:var(--brown);color:white;}
+    .sidebar-link{transition:all .2s; border-left: 3px solid transparent;}
+    .sidebar-link:hover, .sidebar-link.active{background:rgba(255,255,255,.05); border-left-color:var(--gold); color:var(--gold);}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}
+    .modal-bg{background:rgba(26,14,7,.7);backdrop-filter:blur(8px);}
+    select:focus{outline:none;border-color:var(--gold)!important;}
+    .status-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+  </style>
+</head>
+<body class="flex min-h-screen">
+  <aside class="sidebar fixed w-64 h-full flex flex-col hidden md:flex z-50">
+    <div class="p-6 pb-2 border-b border-white/10">
+      <div class="text-2xl mb-1">☕</div>
+      <div class="font-bold text-xl" style="font-family:'Cormorant Garamond',serif;">Backseat Admin</div>
+    </div>
+    <nav class="flex-1 py-4 space-y-1">
+      <a href="/admin" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">📊</span> Dashboard</a>
+      <a href="/admin-products" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">📦</span> Produk</a>
+      <a href="/admin-orders" class="sidebar-link active flex items-center px-6 py-3 text-sm font-medium"><span class="w-6">🛒</span> Pesanan</a>
+      <a href="/admin-customers" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">👥</span> Pelanggan</a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 md:ml-64 p-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold" style="font-family:'Cormorant Garamond',serif;">Manajemen Pesanan</h1>
+      <p class="text-stone-500 text-sm mt-1">Verifikasi pembayaran dan perbarui status pesanan.</p>
+    </header>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-stone-50 border-b border-stone-200 text-xs uppercase tracking-wider text-stone-500">
+              <th class="p-4 font-semibold">ID / Tanggal</th>
+              <th class="p-4 font-semibold">Pelanggan</th>
+              <th class="p-4 font-semibold">Total</th>
+              <th class="p-4 font-semibold">Status</th>
+              <th class="p-4 font-semibold text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="text-sm divide-y divide-stone-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="order-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+          <h3 class="text-2xl font-bold" style="font-family:'Cormorant Garamond',serif;">Detail Pesanan</h3>
+          <div class="text-xs text-stone-500 mt-1 font-mono" id="m-order-id"></div>
+        </div>
+        <button onclick="document.getElementById('order-modal').classList.add('hidden')" class="text-stone-400 text-xl">✕</button>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <div>
+          <div class="text-xs text-stone-400 uppercase font-semibold mb-1">Info Pelanggan</div>
+          <div class="font-semibold text-stone-800" id="m-cust-name"></div>
+          <div class="text-sm text-stone-500" id="m-cust-contact"></div>
+          <div class="text-sm text-stone-500 mt-2">📍 <span id="m-cust-addr"></span></div>
+        </div>
+        <div>
+          <div class="text-xs text-stone-400 uppercase font-semibold mb-1">Bukti Pembayaran</div>
+          <div id="m-proof-container"></div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="text-xs text-stone-400 uppercase font-semibold mb-2">Item Pesanan</div>
+        <div class="bg-stone-50 rounded-xl p-4 space-y-2 border border-stone-100" id="m-items"></div>
+        <div class="flex justify-between items-center mt-3 px-4 font-bold text-lg" style="color:var(--brown);">
+          <span>Total:</span><span id="m-total"></span>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <label class="block text-xs font-semibold text-stone-500 uppercase mb-2">Update Status</label>
+        <div class="flex gap-2">
+          <select id="m-status" class="flex-1 bg-white border border-stone-200 px-3 py-2 rounded-lg text-sm">
+            <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
+            <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Upload Ulang">Upload Ulang</option>
+            <option value="Ditolak">Ditolak</option>
+          </select>
+          <button onclick="updateStatus()" class="btn-gold px-6 py-2 rounded-lg text-white font-semibold text-sm">Simpan</button>
+        </div>
+        <input type="text" id="m-reject" placeholder="Alasan penolakan / upload ulang (wajib jika ditolak)" class="w-full mt-2 bg-white border border-stone-200 px-3 py-2 rounded-lg text-sm hidden">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('bb_token');
+    const H = {'Authorization':'Bearer '+token, 'Content-Type':'application/json'};
+    if (!token) window.location.href='/login';
+    let orders = [];
+    let currentOrderId = null;
+
+    const statusStyle = {
+      'Menunggu Pembayaran': 'bg-amber-100 text-amber-700',
+      'Menunggu Verifikasi': 'bg-blue-100 text-blue-700',
+      'Diproses': 'bg-teal-100 text-teal-700',
+      'Selesai': 'bg-green-100 text-green-700',
+      'Ditolak': 'bg-red-100 text-red-700',
+      'Upload Ulang': 'bg-amber-100 text-amber-700',
+    };
+
+    async function loadOrders() {
+      const res = await fetch('/api/admin/orders', {headers:H});
+      orders = await res.json();
+      document.getElementById('table-body').innerHTML = orders.map(o => `
+        <tr class="hover:bg-stone-50 transition">
+          <td class="p-4">
+            <div class="font-mono font-semibold text-stone-800">${o.order_id}</div>
+            <div class="text-xs text-stone-400">${new Date(o.created_at).toLocaleDateString('id-ID')}</div>
+          </td>
+          <td class="p-4">
+            <div class="font-semibold text-stone-800">${o.customer_name}</div>
+            <div class="text-xs text-stone-500">${o.customer_phone || '-'}</div>
+          </td>
+          <td class="p-4 font-semibold text-stone-800">Rp ${Number(o.total_price).toLocaleString('id-ID')}</td>
+          <td class="p-4"><span class="status-badge ${statusStyle[o.status]||'bg-stone-200 text-stone-600'}">${o.status}</span></td>
+          <td class="p-4 text-right">
+            <button onclick="openModal('${o.order_id}')" class="text-blue-500 hover:underline text-xs font-semibold px-3 py-1 bg-blue-50 rounded">Proses</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal(orderId) {
+      const o = orders.find(x => x.order_id === orderId);
+      if(!o) return;
+      currentOrderId = orderId;
+      document.getElementById('m-order-id').textContent = o.order_id;
+      document.getElementById('m-cust-name').textContent = o.customer_name;
+      document.getElementById('m-cust-contact').textContent = o.customer_email + ' | ' + (o.customer_phone||'-');
+      document.getElementById('m-cust-addr').textContent = o.delivery_address || 'Tanpa Alamat (Pickup/Dine-in)';
+      
+      const proofDiv = document.getElementById('m-proof-container');
+      if(o.payment_proof) {
+        proofDiv.innerHTML = `<a href="${o.payment_proof}" target="_blank"><img src="${o.payment_proof}" class="w-24 h-32 object-cover rounded border border-stone-200 hover:opacity-80 transition"></a><div class="text-xs text-blue-500 mt-1">Klik untuk perbesar</div>`;
+      } else {
+        proofDiv.innerHTML = `<div class="text-xs text-stone-400 italic">Belum upload bukti</div>`;
+      }
+
+      document.getElementById('m-items').innerHTML = o.items.map(i => `
+        <div class="flex justify-between text-sm">
+          <span>${i.product_name} <span class="text-stone-400">x${i.quantity}</span></span>
+          <span class="font-semibold">Rp ${(i.price*i.quantity).toLocaleString('id-ID')}</span>
+        </div>
+      `).join('');
+      document.getElementById('m-total').textContent = 'Rp ' + Number(o.total_price).toLocaleString('id-ID');
+      
+      const statusSelect = document.getElementById('m-status');
+      statusSelect.value = o.status;
+      const rejectInput = document.getElementById('m-reject');
+      rejectInput.value = o.reject_reason || '';
+      rejectInput.classList.toggle('hidden', !['Ditolak','Upload Ulang'].includes(o.status));
+
+      statusSelect.onchange = (e) => {
+        rejectInput.classList.toggle('hidden', !['Ditolak','Upload Ulang'].includes(e.target.value));
+      };
+
+      document.getElementById('order-modal').classList.remove('hidden');
+    }
+
+    async function updateStatus() {
+      const status = document.getElementById('m-status').value;
+      const reject_reason = document.getElementById('m-reject').value;
+      
+      if(['Ditolak','Upload Ulang'].includes(status) && !reject_reason) {
+        alert('Mohon isi alasan penolakan/upload ulang'); return;
+      }
+
+      await fetch('/api/admin/orders/'+currentOrderId+'/status', {
+        method:'PUT', headers:H, body:JSON.stringify({status, reject_reason})
+      });
+      document.getElementById('order-modal').classList.add('hidden');
+      loadOrders();
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

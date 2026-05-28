@@ -1,0 +1,19 @@
+﻿{
+  "name": "backseat-barista",
+  "version": "1.0.0",
+  "description": "Backseat Barista - Platform Jual Beli Minuman Online",
+  "author": "Raffi Putra Berlian (M0405241056) - Kelompok 15",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "sql.js": "^1.10.2"
+  }
+}

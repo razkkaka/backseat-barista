@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Admin Dashboard — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}
+    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}
+    .sidebar{background:var(--brown);color:white;}
+    .sidebar-link{transition:all .2s; border-left: 3px solid transparent;}
+    .sidebar-link:hover, .sidebar-link.active{background:rgba(255,255,255,.05); border-left-color:var(--gold); color:var(--gold);}
+    .stat-card{background:white; border-radius:1rem; padding:1.5rem; box-shadow:0 4px 6px -1px rgba(0,0,0,.05); border:1px solid #f5f5f4;}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}
+    .btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,151,58,.4);}
+  </style>
+</head>
+<body class="flex min-h-screen">
+  <aside class="sidebar fixed w-64 h-full flex flex-col hidden md:flex z-50">
+    <div class="p-6 pb-2 border-b border-white/10">
+      <div class="text-2xl mb-1">☕</div>
+      <div class="font-bold text-xl" style="font-family:'Cormorant Garamond',serif;">Backseat Admin</div>
+      <div class="text-xs text-stone-400 mt-1" id="admin-name">Memuat...</div>
+    </div>
+    <nav class="flex-1 py-4 space-y-1 overflow-y-auto">
+      <a href="/admin" class="sidebar-link active flex items-center px-6 py-3 text-sm font-medium"><span class="w-6">📊</span> Dashboard</a>
+      <a href="/admin-products" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">📦</span> Produk</a>
+      <a href="/admin-orders" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">🛒</span> Pesanan</a>
+      <a href="/admin-customers" class="sidebar-link flex items-center px-6 py-3 text-sm font-medium text-stone-300"><span class="w-6">👥</span> Pelanggan</a>
+    </nav>
+    <div class="p-4 border-t border-white/10">
+      <button onclick="logout()" class="flex items-center px-4 py-2 text-sm text-stone-400 hover:text-white w-full transition"><span class="w-6">🚪</span> Keluar</button>
+    </div>
+  </aside>
+
+  <main class="flex-1 md:ml-64 p-8">
+    <header class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold" style="font-family:'Cormorant Garamond',serif;">Ringkasan Usaha</h1>
+        <p class="text-stone-500 text-sm mt-1">Pantau performa Backseat Barista hari ini.</p>
+      </div>
+      <a href="/" class="btn-gold px-4 py-2 rounded-xl text-white text-xs font-semibold">Lihat Website →</a>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="stat-card">
+        <div class="text-stone-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Pendapatan</div>
+        <div class="text-2xl font-bold" style="color:var(--brown);" id="stat-revenue">Rp 0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-stone-400 text-xs font-semibold uppercase tracking-wider mb-2">Pesanan Selesai</div>
+        <div class="text-2xl font-bold text-stone-800" id="stat-orders">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-stone-400 text-xs font-semibold uppercase tracking-wider mb-2">Menunggu Verifikasi</div>
+        <div class="text-2xl font-bold text-amber-600" id="stat-pending">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-stone-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Pelanggan</div>
+        <div class="text-2xl font-bold text-stone-800" id="stat-customers">0</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+        <h2 class="font-bold text-lg mb-4 serif" style="font-family:'Cormorant Garamond',serif;">Menu Terlaris</h2>
+        <div id="bestseller-list" class="space-y-4">Memuat...</div>
+      </div>
+      <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-6">
+        <h2 class="font-bold text-lg mb-4 serif" style="font-family:'Cormorant Garamond',serif;">Pengajuan Kolaborasi</h2>
+        <div id="collab-list" class="space-y-4">Memuat...</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('bb_token');
+    const user = JSON.parse(localStorage.getItem('bb_user')||'null');
+    if (!token || !['owner','admin'].includes(user?.role)) window.location.href='/login';
+    document.getElementById('admin-name').textContent = user.name + ' (' + user.role + ')';
+    const H = {'Authorization':'Bearer '+token, 'Content-Type':'application/json'};
+
+    function logout() { localStorage.clear(); window.location.href='/'; }
+
+    async function loadStats() {
+      const res = await fetch('/api/admin/stats', {headers:H});
+      const d = await res.json();
+      document.getElementById('stat-revenue').textContent = 'Rp ' + Number(d.revenue).toLocaleString('id-ID');
+      document.getElementById('stat-orders').textContent = d.total_orders;
+      document.getElementById('stat-pending').textContent = d.pending_payment;
+      document.getElementById('stat-customers').textContent = d.total_customers;
+    }
+
+    async function loadBestsellers() {
+      const res = await fetch('/api/admin/bestsellers', {headers:H});
+      const d = await res.json();
+      const list = document.getElementById('bestseller-list');
+      if(!d.length) { list.innerHTML = '<div class="text-sm text-stone-400">Belum ada data penjualan</div>'; return; }
+      list.innerHTML = d.map((item, i) => `
+        <div class="flex justify-between items-center border-b border-stone-50 pb-2">
+          <div class="flex items-center gap-3">
+            <div class="w-6 text-stone-400 font-bold">#${i+1}</div>
+            <div class="text-sm font-semibold text-stone-800">${item.name}</div>
+          </div>
+          <div class="text-sm text-stone-500">${item.total_sold} terjual</div>
+        </div>
+      `).join('');
+    }
+
+    async function loadCollabs() {
+      const res = await fetch('/api/admin/collaborations', {headers:H});
+      const d = await res.json();
+      const list = document.getElementById('collab-list');
+      if(!d.length) { list.innerHTML = '<div class="text-sm text-stone-400">Belum ada pengajuan</div>'; return; }
+      list.innerHTML = d.slice(0,5).map(c => `
+        <div class="border border-stone-100 rounded-xl p-4 bg-stone-50/50">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <div class="font-semibold text-sm">${c.business_name} <span class="text-xs text-stone-400 font-normal">(${c.product_type})</span></div>
+              <div class="text-xs text-stone-500">📞 ${c.contact}</div>
+            </div>
+            <select onchange="updateCollab(${c.id}, this.value)" class="text-xs bg-white border border-stone-200 rounded px-2 py-1">
+              <option value="Pending" ${c.status==='Pending'?'selected':''}>Pending</option>
+              <option value="Dihubungi" ${c.status==='Dihubungi'?'selected':''}>Dihubungi</option>
+              <option value="Selesai" ${c.status==='Selesai'?'selected':''}>Selesai</option>
+            </select>
+          </div>
+          <p class="text-xs text-stone-500 italic">"${c.message}"</p>
+        </div>
+      `).join('');
+    }
+
+    async function updateCollab(id, status) {
+      await fetch('/api/admin/collaborations/'+id, {method:'PUT', headers:H, body:JSON.stringify({status})});
+    }
+
+    loadStats(); loadBestsellers(); loadCollabs();
+  </script>
+</body>
+</html>
