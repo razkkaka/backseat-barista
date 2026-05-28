@@ -1,14 +1,17 @@
 ﻿{
   "name": "backseat-barista",
   "version": "1.0.0",
-  "description": "Backseat Barista - Platform Jual Beli Minuman Online",
+  "description": "Backseat Barista",
   "author": "Kelompok 15",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
+    "axios": "^1.6.8",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.1.2",
     "cors": "^2.8.5",

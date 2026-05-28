@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,22 +27,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// Inisialisasi Database menggunakan better-sqlite3
 const db = new Database('./backseat.db');
 
-// FIX: Menangani strict parameter error di environment server Railway
-function run(sql, params = []) { 
-  const stmt = db.prepare(sql); 
-  return params.length ? stmt.run(params) : stmt.run(); 
-}
-function get(sql, params = []) { 
-  const stmt = db.prepare(sql); 
-  return params.length ? stmt.get(params) : stmt.get(); 
-}
-function all(sql, params = []) { 
-  const stmt = db.prepare(sql); 
-  return params.length ? stmt.all(params) : stmt.all(); 
-}
+// FIX: Format eksekusi array yang aman untuk SQLite di Railway
+function run(sql, params = []) { return db.prepare(sql).run(...params); }
+function get(sql, params = []) { return db.prepare(sql).get(...params); }
+function all(sql, params = []) { return db.prepare(sql).all(...params); }
 
 function initDb() {
   db.exec(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, address TEXT, role TEXT DEFAULT 'customer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
@@ -63,24 +54,15 @@ function initDb() {
 
   if (!get("SELECT id FROM products LIMIT 1")) {
     const products = [
-      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli, disajikan dingin. Perpaduan espresso premium dengan susu segar dan gula aren pilihan.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
-      ['Cold Brew Classic', 'Cold brew 12 jam dengan biji kopi pilihan. Rasa bold, smooth, dan segar sempurna untuk hari panas.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
-      ['Caramel Latte', 'Espresso dengan susu steamed dan siroop karamel homemade. Manis, creamy, dan memanjakan lidah.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
-      ['Matcha Latte', 'Matcha grade A dari Jepang dengan susu full cream. Earthy, creamy, dan penuh antioksidan.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
-      ['Thai Tea Special', 'Thai tea otentik dengan campuran rempah pilihan, disajikan dengan susu evaporasi dan es melimpah.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0],
-      ['Taro Milk Tea', 'Minuman talas ungu creamy dengan bubble pearl, cocok untuk semua kalangan.', 24000, 'Non-Kopi', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500', 15, 1, 0],
-      ['Espresso Shot', 'Double shot espresso dari biji kopi single origin Toraja. Intense, bold, dan bersih di palat.', 18000, 'Kopi', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500', 25, 1, 0],
-      ['Chocolate Frappe', 'Blended chocolate dengan whipped cream dan cokelat drizzle. Dessert drink yang menggiurkan.', 32000, 'Non-Kopi', 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500', 10, 1, 0],
-      ['Avocado Coffee', 'Perpaduan unik alpukat creamy dengan espresso. Kaya lemak sehat dan penuh energi.', 35000, 'Kopi', 'https://images.unsplash.com/photo-1592334873219-f6729cbfb501?w=500', 8, 1, 1],
-      ['Lemon Mojito', 'Mocktail segar dengan lemon, mint, dan soda. Pilihan tepat untuk yang tidak suka kafein.', 20000, 'Non-Kopi', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500', 18, 1, 0],
+      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
+      ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
+      ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
+      ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
+      ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0]
     ];
-    for (const p of products) {
-      run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
-    }
+    for (const p of products) run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
   }
-  console.log('✅ Database SQLite siap!');
 }
-
 initDb();
 
 const auth = (req, res, next) => {
@@ -99,37 +81,29 @@ const ownerOnly = (req, res, next) => {
 app.post('/api/auth/register', (req, res) => {
   try {
     const { name, email, password, phone, address } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ error: 'Nama, email, dan password wajib diisi' });
-    if (password.length < 8) return res.status(400).json({ error: 'Password minimal 8 karakter' });
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({ error: 'Format email tidak valid' });
     if (get("SELECT id FROM users WHERE email=?", [email])) return res.status(400).json({ error: 'Email sudah terdaftar' });
     run("INSERT INTO users (name,email,password,phone,address) VALUES (?,?,?,?,?)", [name, email, bcrypt.hashSync(password, 10), phone || '', address || '']);
     res.json({ success: true, message: 'Registrasi berhasil' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/auth/login', (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email wajib diisi' });
-    if (!password) return res.status(400).json({ error: 'Password wajib diisi' });
     const u = get("SELECT * FROM users WHERE email=?", [email]);
     if (!u || !bcrypt.compareSync(password, u.password)) return res.status(401).json({ error: 'Email atau password salah' });
     const token = jwt.sign({ id: u.id, role: u.role, name: u.name, email: u.email }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: u.id, name: u.name, email: u.email, role: u.role } });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (err) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/upload', ownerOnly, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
-  if (!req.file.mimetype.startsWith('image/')) return res.status(400).json({ error: 'Format file harus JPG atau PNG' });
   res.json({ url: '/uploads/' + req.file.filename });
 });
 
 app.post('/api/upload/payment', auth, upload.single('proof'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
-  if (!req.file.mimetype.startsWith('image/')) return res.status(400).json({ error: 'Format file harus JPG atau PNG' });
   res.json({ url: '/uploads/' + req.file.filename });
 });
 
@@ -142,27 +116,20 @@ app.get('/api/products', (req, res) => {
     if (search) { sql += " AND name LIKE ?"; params.push('%' + search + '%'); }
     sql += " ORDER BY is_bestseller DESC, id DESC";
     res.json(all(sql, params));
-  } catch (error) {
-    console.error('Products API Error:', error);
-    res.status(500).json({ error: 'Gagal mengambil data produk' });
-  }
+  } catch (error) { res.status(500).json({ error: 'Gagal memuat produk' }); }
 });
 
 app.get('/api/products/:id', (req, res) => {
-  try {
-    const p = get("SELECT * FROM products WHERE id=? AND is_active=1", [req.params.id]);
-    p ? res.json(p) : res.status(404).json({ error: 'Produk tidak ditemukan' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  const p = get("SELECT * FROM products WHERE id=? AND is_active=1", [req.params.id]);
+  p ? res.json(p) : res.status(404).json({ error: 'Produk tidak ditemukan' });
 });
 
 app.get('/api/stats/public', (req, res) => {
-  try {
-    res.json({
-      total_products: get("SELECT COUNT(*) as c FROM products WHERE is_active=1")?.c || 0,
-      total_orders: get("SELECT COUNT(*) as c FROM orders WHERE status='Selesai'")?.c || 0,
-      total_customers: get("SELECT COUNT(*) as c FROM users WHERE role='customer'")?.c || 0,
-    });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  res.json({
+    total_products: get("SELECT COUNT(*) as c FROM products WHERE is_active=1")?.c || 0,
+    total_orders: get("SELECT COUNT(*) as c FROM orders WHERE status='Selesai'")?.c || 0,
+    total_customers: get("SELECT COUNT(*) as c FROM users WHERE role='customer'")?.c || 0,
+  });
 });
 
 app.get('/api/cart', auth, (req, res) => {
@@ -184,20 +151,19 @@ app.post('/api/cart', auth, (req, res) => {
     if (existing) run("UPDATE cart SET quantity=? WHERE id=?", [newQty, existing.id]);
     else run("INSERT INTO cart (user_id, product_id, quantity) VALUES (?,?,?)", [req.user.id, product_id, qty]);
     res.json({ success: true, message: 'Produk ditambahkan ke keranjang' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.put('/api/cart/:id', auth, (req, res) => {
   try {
-    const { quantity } = req.body;
-    const qty = parseInt(quantity);
+    const qty = parseInt(req.body.quantity);
     const item = get("SELECT c.*, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.id=? AND c.user_id=?", [req.params.id, req.user.id]);
     if (!item) return res.status(404).json({ error: 'Item tidak ditemukan' });
-    if (qty > item.stock) return res.status(400).json({ error: `Stok tidak mencukupi. Tersedia: ${item.stock}` });
+    if (qty > item.stock) return res.status(400).json({ error: `Stok tidak mencukupi.` });
     if (qty <= 0) { run("DELETE FROM cart WHERE id=?", [req.params.id]); return res.json({ success: true }); }
     run("UPDATE cart SET quantity=? WHERE id=?", [qty, req.params.id]);
     res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.delete('/api/cart/:id', auth, (req, res) => {
@@ -215,18 +181,14 @@ app.post('/api/favorites/toggle', auth, (req, res) => {
     const existing = get("SELECT id FROM favorites WHERE user_id=? AND product_id=?", [req.user.id, product_id]);
     if (existing) { run("DELETE FROM favorites WHERE id=?", [existing.id]); res.json({ success: true, action: 'removed' }); }
     else { run("INSERT INTO favorites (user_id, product_id) VALUES (?,?)", [req.user.id, product_id]); res.json({ success: true, action: 'added' }); }
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/orders/checkout', auth, (req, res) => {
   try {
     const { delivery_address, notes } = req.body;
     const cartItems = all("SELECT c.quantity, p.id, p.name, p.price, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.user_id=?", [req.user.id]);
-    if (!cartItems.length) return res.status(400).json({ error: 'Keranjang masih kosong' });
-
-    for (const item of cartItems) {
-      if (item.quantity > item.stock) return res.status(400).json({ error: `Stok ${item.name} tidak mencukupi` });
-    }
+    if (!cartItems.length) return res.status(400).json({ error: 'Keranjang kosong' });
 
     const orderId = 'ORD-' + Date.now().toString().slice(-8);
     const total = cartItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -237,37 +199,28 @@ app.post('/api/orders/checkout', auth, (req, res) => {
     }
     run("DELETE FROM cart WHERE user_id=?", [req.user.id]);
     res.json({ success: true, order_id: orderId, total });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.get('/api/orders/my', auth, (req, res) => {
   const orders = all("SELECT * FROM orders WHERE user_id=? ORDER BY id DESC", [req.user.id]);
-  const result = orders.map(o => ({
-    ...o,
-    items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id])
-  }));
-  res.json(result);
+  res.json(orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) })));
 });
 
 app.post('/api/orders/:orderId/payment', auth, upload.single('proof'), (req, res) => {
   try {
-    const order = get("SELECT * FROM orders WHERE order_id=? AND user_id=?", [req.params.orderId, req.user.id]);
-    if (!order) return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
-    if (!req.file) return res.status(400).json({ error: 'Bukti pembayaran wajib diunggah' });
-    if (!req.file.mimetype.startsWith('image/')) return res.status(400).json({ error: 'Format file harus JPG atau PNG' });
+    if (!req.file) return res.status(400).json({ error: 'Bukti wajib diunggah' });
     run("UPDATE orders SET payment_proof=?, status='Menunggu Verifikasi', updated_at=CURRENT_TIMESTAMP WHERE order_id=?", ['/uploads/' + req.file.filename, req.params.orderId]);
-    res.json({ success: true, message: 'Bukti pembayaran berhasil diunggah' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+    res.json({ success: true, message: 'Bukti berhasil diunggah' });
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/collaboration', (req, res) => {
   try {
     const { business_name, product_type, contact, message } = req.body;
-    if (!business_name || !product_type || !contact) return res.status(400).json({ error: 'Semua kolom wajib diisi' });
-    if (!/^\d+$/.test(contact.trim())) return res.status(400).json({ error: 'Nomor kontak harus berupa angka' });
     run("INSERT INTO collaborations (business_name, product_type, contact, message) VALUES (?,?,?,?)", [business_name, product_type, contact, message || '']);
-    res.json({ success: true, message: 'Pengajuan berhasil dikirim' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server' }); }
+    res.json({ success: true, message: 'Berhasil dikirim' });
+  } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
 app.get('/api/admin/stats', ownerOnly, (req, res) => {
@@ -284,7 +237,6 @@ app.get('/api/admin/stats', ownerOnly, (req, res) => {
 app.get('/api/admin/products', ownerOnly, (req, res) => res.json(all("SELECT * FROM products ORDER BY id DESC")));
 app.post('/api/admin/products', ownerOnly, (req, res) => {
   const b = req.body;
-  if (!b.name || !b.price) return res.status(400).json({ error: 'Nama dan harga wajib diisi' });
   run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)",
     [b.name, b.description || '', b.price, b.category || 'Kopi', b.image_url || '', b.stock || 10, b.is_active ?? 1, b.is_bestseller || 0]);
   res.json({ success: true });
@@ -302,15 +254,11 @@ app.delete('/api/admin/products/:id', ownerOnly, (req, res) => {
 
 app.get('/api/admin/orders', ownerOnly, (req, res) => {
   const orders = all("SELECT o.*, u.name as customer_name, u.email as customer_email, u.phone as customer_phone FROM orders o JOIN users u ON o.user_id=u.id ORDER BY o.id DESC");
-  const result = orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) }));
-  res.json(result);
+  res.json(orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) })));
 });
 
 app.put('/api/admin/orders/:orderId/status', ownerOnly, (req, res) => {
-  const { status, reject_reason } = req.body;
-  const validStatuses = ['Menunggu Pembayaran', 'Menunggu Verifikasi', 'Diproses', 'Selesai', 'Ditolak', 'Upload Ulang'];
-  if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Status tidak valid' });
-  run("UPDATE orders SET status=?, reject_reason=?, updated_at=CURRENT_TIMESTAMP WHERE order_id=?", [status, reject_reason || null, req.params.orderId]);
+  run("UPDATE orders SET status=?, reject_reason=?, updated_at=CURRENT_TIMESTAMP WHERE order_id=?", [req.body.status, req.body.reject_reason || null, req.params.orderId]);
   res.json({ success: true });
 });
 
@@ -324,59 +272,50 @@ app.get('/api/admin/bestsellers', ownerOnly, (req, res) => {
   res.json(all("SELECT p.name, SUM(oi.quantity) as total_sold FROM order_items oi JOIN products p ON oi.product_id=p.id GROUP BY p.id ORDER BY total_sold DESC LIMIT 5"));
 });
 
+// FIX: Menggunakan Axios untuk menghindari Node.js Fetch API Crash
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
-    const products = all("SELECT name, price, category, stock FROM products WHERE is_active=1 AND stock > 0 ORDER BY is_bestseller DESC");
-    const productList = products.map(p => `${p.name} (${p.category}, Rp${Number(p.price).toLocaleString()}, stok:${p.stock})`).join('; ');
-
     const msg = message.toLowerCase();
     let reply = '';
 
-    if (msg.includes('menu') || msg.includes('produk') || msg.includes('minuman') || msg.includes('apa saja')) {
-      reply = `Berikut menu kami yang tersedia:\n\n☕ <b>Kopi:</b> Iced Palm Sugar Latte, Cold Brew Classic, Caramel Latte, Espresso Shot, Avocado Coffee\n🍵 <b>Non-Kopi:</b> Matcha Latte, Thai Tea Special, Taro Milk Tea, Chocolate Frappe, Lemon Mojito\n\nSemua bisa kamu lihat lengkap di halaman Menu! 😊`;
-    } else if (msg.includes('harga') || msg.includes('berapa') || msg.includes('murah') || msg.includes('mahal')) {
-      reply = `Harga minuman kami mulai dari <b>Rp 18.000</b> sampai <b>Rp 35.000</b>. \n\n💰 Paling terjangkau: Espresso Shot (Rp 18.000)\n⭐ Paling favorit: Iced Palm Sugar Latte (Rp 28.000)\n🌟 Premium: Avocado Coffee (Rp 35.000)\n\nKunjungi halaman Menu untuk lihat harga lengkap!`;
-    } else if (msg.includes('pesan') || msg.includes('beli') || msg.includes('order') || msg.includes('cara')) {
-      reply = `Cara memesan di Backseat Barista:\n\n1️⃣ <b>Daftar/Login</b> akun kamu\n2️⃣ <b>Pilih menu</b> yang kamu suka di katalog\n3️⃣ <b>Tambah ke keranjang</b>\n4️⃣ <b>Checkout</b> & konfirmasi pesanan\n5️⃣ <b>Transfer</b> ke rekening kami\n6️⃣ <b>Upload bukti</b> transfer\n7️⃣ Tunggu verifikasi dari tim kami 🎉`;
-    } else if (msg.includes('bayar') || msg.includes('transfer') || msg.includes('rekening') || msg.includes('bank')) {
-      reply = `Pembayaran dilakukan via <b>Transfer Bank Manual</b>:\n\n🏦 BCA: <b>1234-5678-90</b>\n🏦 Mandiri: <b>0987-6543-21</b>\na/n <b>Fathia Adhiana</b>\n\nSetelah transfer, upload bukti di halaman "Pesanan Saya". Tim kami akan verifikasi dalam 1-2 jam ya!`;
-    } else if (msg.includes('rekomendasi') || msg.includes('enak') || msg.includes('terbaik') || msg.includes('bestseller') || msg.includes('favorit')) {
-      reply = `Menu <b>terlaris</b> Backseat Barista:\n\n⭐ <b>Iced Palm Sugar Latte</b> - Favorit banget! Manis gula aren asli\n🥶 <b>Cold Brew Classic</b> - Perfect buat yang butuh boost kafein\n🍵 <b>Matcha Latte</b> - Hits banget, antioxidant + enak\n🥑 <b>Avocado Coffee</b> - Unik dan bergizi!\n\nRekomendasi pertama kali: coba Iced Palm Sugar Latte dulu! 😍`;
-    } else if (msg.includes('kopi') || msg.includes('coffee') || msg.includes('espresso') || msg.includes('kafein')) {
-      reply = `Menu kopi kami:\n\n☕ <b>Espresso Shot</b> - Rp 18.000 (Pure & bold)\n☕ <b>Cold Brew Classic</b> - Rp 25.000 (Smooth & refreshing)\n☕ <b>Iced Palm Sugar Latte</b> - Rp 28.000 (Bestseller!)\n☕ <b>Caramel Latte</b> - Rp 30.000 (Sweet & creamy)\n☕ <b>Avocado Coffee</b> - Rp 35.000 (Premium & healthy)\n\nSemua menggunakan biji kopi pilihan ya! ☕`;
-    } else if (msg.includes('matcha') || msg.includes('thai tea') || msg.includes('taro') || msg.includes('non kopi') || msg.includes('tanpa kopi')) {
-      reply = `Menu non-kopi kami:\n\n🍵 <b>Matcha Latte</b> - Rp 27.000\n🧋 <b>Thai Tea Special</b> - Rp 22.000\n🟣 <b>Taro Milk Tea</b> - Rp 24.000\n🍫 <b>Chocolate Frappe</b> - Rp 32.000\n🍋 <b>Lemon Mojito</b> - Rp 20.000\n\nPerfect buat yang mau tetap segar tanpa kafein!`;
-    } else if (msg.includes('stok') || msg.includes('tersedia') || msg.includes('habis')) {
-      const available = products.filter(p => p.stock > 0);
-      reply = `Saat ini ada <b>${available.length} menu tersedia</b>! Semua stok aman ya. Langsung aja order sebelum kehabisan 😊`;
-    } else if (msg.includes('jam') || msg.includes('buka') || msg.includes('tutup') || msg.includes('operasional')) {
-      reply = `Backseat Barista beroperasi:\n⏰ <b>Senin - Jumat: 08.00 - 21.00</b>\n⏰ <b>Sabtu - Minggu: 09.00 - 22.00</b>\n\nOrder bisa dilakukan kapan saja, tapi verifikasi pembayaran dilakukan di jam operasional ya! 😊`;
-    } else if (msg.includes('lokasi') || msg.includes('alamat') || msg.includes('dimana')) {
-      reply = `📍 Backseat Barista berlokasi di <b>Bogor, Jawa Barat</b>.\n\nSaat ini kami melayani pemesanan <b>online only</b> dengan sistem pickup. Untuk info pickup, hubungi kami ya!`;
-    } else if (msg.includes('kolaborasi') || msg.includes('mitra') || msg.includes('umkm') || msg.includes('kerjasama')) {
-      reply = `Tertarik kolaborasi dengan Backseat Barista? 🤝\n\nKami terbuka untuk kerjasama UMKM F&B! Kunjungi halaman <b>"Kolaborasi UMKM"</b> dan isi formulir pendaftaran.\n\nTim kami akan menghubungi kamu dalam 1-3 hari kerja! 📞`;
-    } else if (msg.includes('halo') || msg.includes('hai') || msg.includes('hello') || msg.includes('hi') || msg.includes('selamat')) {
-      reply = `Halo! Selamat datang di <b>Backseat Barista</b> ☕✨\n\nSaya BrewBot, asisten virtual siap membantu kamu!\n\nKamu bisa tanya tentang:\n• 📋 Menu & harga\n• 🛒 Cara memesan\n• 💳 Info pembayaran\n• ⭐ Rekomendasi menu\n• 🤝 Kolaborasi UMKM\n\nAda yang bisa saya bantu? 😊`;
-    } else {
-      reply = `Terima kasih sudah menghubungi <b>Backseat Barista</b>! ☕\n\nSaya bisa bantu kamu dengan info tentang:\n• Menu & harga minuman\n• Cara memesan online\n• Info pembayaran & transfer\n• Rekomendasi menu\n• Jam operasional\n• Kolaborasi UMKM\n\nCoba tanya hal-hal di atas ya! 😊`;
+    if (msg.includes('menu') || msg.includes('apa saja')) {
+      reply = `Berikut menu kami:\n☕ Kopi: Iced Palm Sugar, Cold Brew, Caramel Latte, dll.\n🍵 Non-Kopi: Matcha, Thai Tea, Taro, Lemon Mojito.\nLihat lengkap di halaman Menu! 😊`;
+    } else if (msg.includes('harga') || msg.includes('berapa')) {
+      reply = `Harga minuman mulai dari Rp 18.000 sampai Rp 35.000. 😊`;
+    } else if (msg.includes('pesan') || msg.includes('beli') || msg.includes('cara')) {
+      reply = `Cara pesan: Login -> Pilih Menu -> Masuk Keranjang -> Checkout -> Transfer -> Upload Bukti. Mudah kan! 🎉`;
+    } else if (msg.includes('bayar') || msg.includes('rekening')) {
+      reply = `BCA: 1234-5678-90\nMandiri: 0987-6543-21\na/n Fathia Adhiana. Upload bukti setelah checkout ya!`;
+    } else if (msg.includes('rekomendasi') || msg.includes('favorit')) {
+      reply = `Menu terlaris kami: ⭐ Iced Palm Sugar Latte dan 🍵 Matcha Latte!`;
+    } else if (msg.includes('kopi')) {
+      reply = `Pecinta kopi? Coba Espresso Shot, Cold Brew, Caramel Latte, atau Avocado Coffee kami! ☕`;
+    } else if (msg.includes('non kopi') || msg.includes('selain kopi')) {
+      reply = `Untuk non-kopi ada Matcha Latte, Thai Tea, Taro Milk Tea, Chocolate Frappe, dan Lemon Mojito! 🍵`;
+    } else if (msg.includes('jam') || msg.includes('buka')) {
+      reply = `Buka Senin-Jumat (08.00-21.00) & Sabtu-Minggu (09.00-22.00).`;
+    } else if (msg.includes('lokasi')) {
+      reply = `📍 Kami berlokasi di Bogor, Jawa Barat. Pembelian via online pickup.`;
     }
 
     try {
       const key = process.env.GROQ_API_KEY;
       if (key && !reply) {
-        const prompt = `Kamu adalah BrewBot, asisten virtual Backseat Barista (kedai kopi online di Bogor). Jawab dengan ramah, singkat, pakai emoji yang sesuai, dalam bahasa Indonesia. Info produk: ${productList}. Pertanyaan: "${message}"`;
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: prompt }] })
-        });
-        const d = await r.json();
-        reply = d.choices[0].message.content;
+        const prompt = `Kamu asisten virtual Backseat Barista. Jawab ramah & singkat. User: "${message}"`;
+        const r = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+          model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: prompt }]
+        }, { headers: { 'Authorization': `Bearer ${key}` } });
+        reply = r.data.choices[0].message.content;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('Groq fallback');
+    }
 
-    res.json({ reply: reply || 'Maaf, saya tidak mengerti pertanyaannya. Coba tanya tentang menu, harga, atau cara pesan ya! 😊' });
-  } catch (error) { res.status(500).json({ error: 'Terjadi kesalahan server pada Chatbot' }); }
+    res.json({ reply: reply || 'Maaf, saya kurang mengerti. Coba tanya tentang menu atau cara pesan! 😊' });
+  } catch (error) {
+    res.status(500).json({ error: 'Server Chatbot Error' });
+  }
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
