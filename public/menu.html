@@ -1,1 +1,274 @@
-﻿<!DOCTYPE html><html lang="id"><head>  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Menu — Backseat Barista</title>  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">  <script src="https://cdn.tailwindcss.com"></script>  <style>    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}    .nav-glass{background:rgba(26,14,7,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,151,58,.15);}    .card{transition:all .35s cubic-bezier(.4,0,.2,1);}    .card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(26,14,7,.12);}    .card img{transition:transform .5s;}    .card:hover img{transform:scale(1.06);}    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}    .btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,151,58,.4);}    .filter-btn.active{background:var(--brown);color:white;border-color:var(--brown);}    .fav-active{color:#e05050;}    input:focus{outline:none;border-color:var(--gold)!important;}    .toast{position:fixed;top:80px;right:20px;z-index:200;animation:slideIn .3s ease both;}    @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}    .sold-out{position:relative;pointer-events:none;} .sold-out::after{content:'Stok Habis';position:absolute;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:700;color:#999;font-size:12px;letter-spacing:.1em;border-radius:1rem;}  </style></head><body><nav class="nav-glass fixed top-0 w-full z-50">  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">    <a href="/" class="flex items-center gap-2">      <span class="text-xl">☕</span>      <div class="text-white font-semibold text-base" style="font-family:'Cormorant Garamond',serif;">Backseat Barista</div>    </a>    <div class="hidden md:flex gap-6 text-sm font-medium text-stone-300">      <a href="/" class="hover:text-white transition">Beranda</a>      <a href="/menu" class="text-white">Menu</a>      <a href="/collaboration" class="hover:text-white transition">Kolaborasi</a>    </div>    <div id="nav-right" class="flex items-center gap-3"></div>  </div></nav><div class="pt-24 pb-20 max-w-6xl mx-auto px-6">  <div class="text-center mb-14">    <div class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--gold);">Katalog Minuman</div>    <h1 class="text-5xl font-bold mb-4" style="font-family:'Cormorant Garamond',serif;">Our Menu</h1>    <p class="text-stone-500 max-w-md mx-auto text-sm">Semua minuman dibuat segar setiap hari dengan bahan berkualitas tinggi pilihan kami.</p>  </div>  <div class="flex flex-col md:flex-row gap-4 mb-10 items-center">    <div class="relative flex-1 max-w-sm">      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">🔍</span>      <input type="text" id="search" placeholder="Cari minuman..." onkeyup="applyFilter()" class="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-sm shadow-sm">    </div>    <div class="flex gap-2 flex-wrap justify-center">      <button class="filter-btn active text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition" onclick="setFilter('Semua',this)">Semua</button>      <button class="filter-btn text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition bg-white text-stone-600" onclick="setFilter('Kopi',this)">☕ Kopi</button>      <button class="filter-btn text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition bg-white text-stone-600" onclick="setFilter('Non-Kopi',this)">🍵 Non-Kopi</button>    </div>  </div>  <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">    <div class="col-span-4 text-center py-16 text-stone-400">Memuat menu...</div>  </div></div><div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(26,14,7,.7);backdrop-filter:blur(8px);" onclick="closeModal(event)">  <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl" onclick="event.stopPropagation()">    <div class="relative h-72">      <img id="m-img" src="" class="w-full h-full object-cover">      <button onclick="document.getElementById('modal').classList.add('hidden')" class="absolute top-4 right-4 bg-white/90 text-stone-700 w-9 h-9 rounded-full font-bold shadow">✕</button>      <div id="m-badge" class="hidden absolute top-4 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">⭐ Bestseller</div>    </div>    <div class="p-6">      <div class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:var(--gold);" id="m-cat"></div>      <h3 class="text-2xl font-bold mb-2" style="font-family:'Cormorant Garamond',serif;" id="m-name"></h3>      <p class="text-stone-500 text-sm leading-relaxed mb-5" id="m-desc"></p>      <div class="flex items-center justify-between">        <div>          <div class="text-xs text-stone-400 font-semibold uppercase">Harga</div>          <div class="text-2xl font-bold" style="color:var(--brown);" id="m-price"></div>        </div>        <div class="flex gap-2">          <button id="m-fav" onclick="toggleFav(modalId)" class="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition">♡</button>          <button id="m-cart" onclick="addToCart(modalId)" class="btn-gold text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow">+ Keranjang</button>        </div>      </div>    </div>  </div></div><div id="toast" class="toast hidden fixed top-20 right-4 bg-stone-900 text-white px-5 py-3 rounded-xl text-sm font-medium shadow-xl z-50"></div><div class="fixed bottom-7 right-7 z-50">  <div id="chat-win" class="hidden mb-3 w-76 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden" style="width:300px;max-height:440px;">    <div class="p-4 flex items-center gap-3" style="background:var(--brown);">      <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">☕</div>      <div><div class="text-white font-semibold text-sm">BrewBot</div><div class="text-xs text-green-400">● Online</div></div>      <button onclick="document.getElementById('chat-win').classList.add('hidden')" class="ml-auto text-stone-400 hover:text-white">✕</button>    </div>    <div id="chat-msgs" class="p-4 h-56 overflow-y-auto space-y-3 bg-stone-50 text-sm">      <div class="bg-white border border-stone-200 rounded-2xl rounded-tl-none px-3 py-2 text-stone-700 max-w-xs">Halo! Ada yang bisa saya bantu? ☕</div>    </div>    <div class="p-3 border-t flex gap-2 bg-white">      <input id="ci" type="text" placeholder="Ketik..." onkeypress="if(event.key==='Enter')sc()" class="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm">      <button onclick="sc()" class="px-3 py-2 rounded-xl text-white text-sm font-bold" style="background:var(--brown);">→</button>    </div>  </div>  <button onclick="document.getElementById('chat-win').classList.toggle('hidden')" class="w-13 h-13 w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-xl transition hover:scale-110" style="background:var(--brown);border:2px solid rgba(200,151,58,.4);">☕</button></div><script>const token = localStorage.getItem('bb_token');const user = JSON.parse(localStorage.getItem('bb_user')||'null');const H = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};// Navconst navRight = document.getElementById('nav-right');if (token && user) {  const isAdmin = ['owner','admin'].includes(user.role);  navRight.innerHTML = `    <a href="/favorites" class="text-stone-300 hover:text-white text-lg transition" title="Favorit">♡</a>    <a href="/cart" class="text-stone-300 hover:text-white text-lg transition" title="Keranjang">🛒</a>    <a href="${isAdmin?'/admin':'/orders'}" class="btn-gold px-3 py-1.5 rounded-full text-xs font-semibold text-white">${isAdmin?'Dashboard':'Pesanan'}</a>  `;} else {  navRight.innerHTML = `<a href="/login" class="text-stone-300 hover:text-white text-sm">Masuk</a><a href="/register" class="btn-gold px-4 py-2 rounded-full text-xs font-semibold text-white">Daftar</a>`;}let allProducts = [], currentFilter = 'Semua', favorites = new Set();let modalId = null;async function loadFavorites() {  if (!token) return;  const res = await fetch('/api/favorites', {headers:H});  if (res.ok) { const data = await res.json(); data.forEach(f => favorites.add(f.id)); }}function setFilter(cat, btn) {  currentFilter = cat;  document.querySelectorAll('.filter-btn').forEach(b => { b.classList.remove('active'); b.classList.add('bg-white','text-stone-600'); });  btn.classList.add('active'); btn.classList.remove('bg-white','text-stone-600');  renderProducts();}function applyFilter() { renderProducts(); }function renderProducts() {  const q = document.getElementById('search').value.toLowerCase();  let filtered = allProducts;  if (currentFilter !== 'Semua') filtered = filtered.filter(p => p.category === currentFilter);  if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q));  const grid = document.getElementById('product-grid');  if (!filtered.length) { grid.innerHTML = '<div class="col-span-4 text-center py-16 text-stone-400"><div class="text-4xl mb-3">🔍</div>Tidak ada menu ditemukan.</div>'; return; }  grid.innerHTML = filtered.map(p => `    <div class="card bg-white rounded-2xl overflow-hidden border border-stone-100 cursor-pointer ${p.stock < 1 ? 'sold-out' : ''}" onclick="openModal(${p.id})">      <div class="h-44 overflow-hidden relative bg-stone-100">        <img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=☕'">        ${p.is_bestseller ? '<div class="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">⭐ Hits</div>' : ''}        <div class="absolute top-3 right-3 ${p.stock > 0 ? 'bg-green-500' : 'bg-stone-400'} text-white text-xs font-bold px-2.5 py-1 rounded-full">${p.stock > 0 ? 'Tersedia' : 'Habis'}</div>        <button class="fav-btn absolute bottom-3 right-3 bg-white/90 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow hover:scale-110 transition ${favorites.has(p.id)?'fav-active':''}" onclick="event.stopPropagation();toggleFav(${p.id},this)">♡</button>      </div>      <div class="p-4">        <div class="text-xs font-semibold tracking-wider uppercase mb-1" style="color:var(--gold);">${p.category}</div>        <h3 class="font-semibold text-sm mb-1 leading-tight" style="font-family:'Cormorant Garamond',serif;font-size:1rem;">${p.name}</h3>        <p class="text-stone-400 text-xs mb-3 leading-relaxed line-clamp-2">${p.description || ''}</p>        <div class="flex items-center justify-between">          <div class="font-bold text-sm" style="color:var(--brown);">Rp ${Number(p.price).toLocaleString('id-ID')}</div>          <button onclick="event.stopPropagation();addToCart(${p.id})" class="btn-gold text-white text-xs px-3 py-1.5 rounded-lg font-semibold" ${p.stock<1?'disabled style="opacity:.5;cursor:not-allowed;"':''}>+ Keranjang</button>        </div>      </div>    </div>  `).join('');}function openModal(id) {  const p = allProducts.find(x => x.id === id); if (!p) return;  modalId = id;  document.getElementById('m-img').src = p.image_url || '';  document.getElementById('m-cat').textContent = p.category;  document.getElementById('m-name').textContent = p.name;  document.getElementById('m-desc').textContent = p.description || 'Minuman spesial dari Backseat Barista.';  document.getElementById('m-price').textContent = 'Rp ' + Number(p.price).toLocaleString('id-ID');  document.getElementById('m-badge').classList.toggle('hidden', !p.is_bestseller);  document.getElementById('m-fav').className = `w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition ${favorites.has(id)?'text-red-500':'text-stone-400'}`;  document.getElementById('m-cart').disabled = p.stock < 1;  if (p.stock < 1) document.getElementById('m-cart').textContent = 'Stok Habis';  else document.getElementById('m-cart').textContent = '+ Keranjang';  document.getElementById('modal').classList.remove('hidden');}function closeModal(e) { if (e.target === document.getElementById('modal')) document.getElementById('modal').classList.add('hidden'); }async function addToCart(id) {  if (!token) { window.location.href = '/login'; return; }  if (user?.role !== 'customer') { showToast('⚠ Owner tidak bisa membeli'); return; }  const res = await fetch('/api/cart', { method:'POST', headers:H, body:JSON.stringify({product_id:id, quantity:1}) });  const d = await res.json();  if (res.ok) showToast('✅ ' + d.message);  else showToast('⚠ ' + d.error);}async function toggleFav(id, btn) {  if (!token) { window.location.href = '/login'; return; }  const res = await fetch('/api/favorites/toggle', { method:'POST', headers:H, body:JSON.stringify({product_id:id}) });  const d = await res.json();  if (res.ok) {    if (d.action === 'added') { favorites.add(id); showToast('❤ Ditambahkan ke favorit'); }    else { favorites.delete(id); showToast('🗑 Dihapus dari favorit'); }    renderProducts();    if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) {      document.getElementById('m-fav').className = `w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition ${favorites.has(id)?'text-red-500':'text-stone-400'}`;    }  }}function showToast(msg) {  const t = document.getElementById('toast');  t.textContent = msg; t.classList.remove('hidden');  setTimeout(() => t.classList.add('hidden'), 2500);}async function sc() {  const ci = document.getElementById('ci');  const msg = ci.value.trim(); if (!msg) return;  const box = document.getElementById('chat-msgs');  box.innerHTML += `<div class="flex justify-end"><div class="bg-stone-800 text-white px-3 py-2 rounded-2xl rounded-tr-none text-sm max-w-xs">${msg}</div></div>`;  ci.value = ''; box.scrollTop = box.scrollHeight;  box.innerHTML += `<div id="typing2" class="bg-white border border-stone-200 px-3 py-2 rounded-2xl rounded-tl-none text-stone-400 text-sm">...</div>`;  const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});  const data = await res.json();  document.getElementById('typing2')?.remove();  box.innerHTML += `<div class="bg-white border border-stone-200 px-3 py-2 rounded-2xl rounded-tl-none text-stone-700 text-sm max-w-xs">${data.reply}</div>`;  box.scrollTop = box.scrollHeight;}// LoadloadFavorites().then(() => {  fetch('/api/products').then(r=>r.json()).then(data => { allProducts = data; renderProducts(); });});</script></body></html>
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}
+    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}
+    .nav-glass{background:rgba(26,14,7,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,151,58,.15);}
+    .card{transition:all .35s cubic-bezier(.4,0,.2,1);}
+    .card:hover{transform:translateY(-6px);box-shadow:0 24px 48px rgba(26,14,7,.12);}
+    .card img{transition:transform .5s;}
+    .card:hover img{transform:scale(1.06);}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}
+    .btn-gold:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,151,58,.4);}
+    .filter-btn.active{background:var(--brown);color:white;border-color:var(--brown);}
+    .fav-active{color:#e05050;}
+    input:focus{outline:none;border-color:var(--gold)!important;}
+    .toast{position:fixed;top:80px;right:20px;z-index:200;animation:slideIn .3s ease both;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+    .sold-out{position:relative;pointer-events:none;} 
+    .sold-out::after{content:'Stok Habis';position:absolute;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-weight:700;color:#999;font-size:12px;letter-spacing:.1em;border-radius:1rem;}
+  </style>
+</head>
+<body>
+<nav class="nav-glass fixed top-0 w-full z-50">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <span class="text-xl">☕</span>
+      <div class="text-white font-semibold text-base" style="font-family:'Cormorant Garamond',serif;">Backseat Barista</div>
+    </a>
+    <div class="hidden md:flex gap-6 text-sm font-medium text-stone-300">
+      <a href="/" class="hover:text-white transition">Beranda</a>
+      <a href="/menu" class="text-white">Menu</a>
+      <a href="/collaboration" class="hover:text-white transition">Kolaborasi</a>
+    </div>
+    <div id="nav-right" class="flex items-center gap-3"></div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-20 max-w-6xl mx-auto px-6">
+  <!-- Header -->
+  <div class="text-center mb-14">
+    <div class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--gold);">Katalog Minuman</div>
+    <h1 class="text-5xl font-bold mb-4" style="font-family:'Cormorant Garamond',serif;">Our Menu</h1>
+    <p class="text-stone-500 max-w-md mx-auto text-sm">Semua minuman dibuat segar setiap hari dengan bahan berkualitas tinggi pilihan kami.</p>
+  </div>
+
+  <!-- Search + Filter -->
+  <div class="flex flex-col md:flex-row gap-4 mb-10 items-center">
+    <div class="relative flex-1 max-w-sm">
+      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">🔍</span>
+      <input type="text" id="search" placeholder="Cari minuman..." onkeyup="applyFilter()" class="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-sm shadow-sm">
+    </div>
+    <div class="flex gap-2 flex-wrap justify-center">
+      <button class="filter-btn active text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition" onclick="setFilter('Semua',this)">Semua</button>
+      <button class="filter-btn text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition bg-white text-stone-600" onclick="setFilter('Kopi',this)">☕ Kopi</button>
+      <button class="filter-btn text-sm px-5 py-2.5 rounded-xl border border-stone-200 font-semibold transition bg-white text-stone-600" onclick="setFilter('Non-Kopi',this)">🍵 Non-Kopi</button>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div class="col-span-4 text-center py-16 text-stone-400">Memuat menu...</div>
+  </div>
+</div>
+
+<!-- Modal Detail -->
+<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(26,14,7,.7);backdrop-filter:blur(8px);" onclick="closeModal(event)">
+  <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+    <div class="relative h-72">
+      <img id="m-img" src="" class="w-full h-full object-cover">
+      <button onclick="document.getElementById('modal').classList.add('hidden')" class="absolute top-4 right-4 bg-white/90 text-stone-700 w-9 h-9 rounded-full font-bold shadow">✕</button>
+      <div id="m-badge" class="hidden absolute top-4 left-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">⭐ Bestseller</div>
+    </div>
+    <div class="p-6">
+      <div class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:var(--gold);" id="m-cat"></div>
+      <h3 class="text-2xl font-bold mb-2" style="font-family:'Cormorant Garamond',serif;" id="m-name"></h3>
+      <p class="text-stone-500 text-sm leading-relaxed mb-5" id="m-desc"></p>
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs text-stone-400 font-semibold uppercase">Harga</div>
+          <div class="text-2xl font-bold" style="color:var(--brown);" id="m-price"></div>
+        </div>
+        <div class="flex gap-2">
+          <button id="m-fav" onclick="toggleFav(modalId)" class="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition">♡</button>
+          <button id="m-cart" onclick="addToCart(modalId)" class="btn-gold text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow">+ Keranjang</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden fixed top-20 right-4 bg-stone-900 text-white px-5 py-3 rounded-xl text-sm font-medium shadow-xl z-50"></div>
+
+<!-- Chat Widget -->
+<div class="fixed bottom-7 right-7 z-50">
+  <div id="chat-win" class="hidden mb-3 w-76 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden" style="width:300px;max-height:440px;">
+    <div class="p-4 flex items-center gap-3" style="background:var(--brown);">
+      <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">☕</div>
+      <div><div class="text-white font-semibold text-sm">BrewBot</div><div class="text-xs text-green-400">● Online</div></div>
+      <button onclick="document.getElementById('chat-win').classList.add('hidden')" class="ml-auto text-stone-400 hover:text-white">✕</button>
+    </div>
+    <div id="chat-msgs" class="p-4 h-56 overflow-y-auto space-y-3 bg-stone-50 text-sm">
+      <div class="bg-white border border-stone-200 rounded-2xl rounded-tl-none px-3 py-2 text-stone-700 max-w-xs">Halo! Ada yang bisa saya bantu? ☕</div>
+    </div>
+    <div class="p-3 border-t flex gap-2 bg-white">
+      <input id="ci" type="text" placeholder="Ketik..." onkeypress="if(event.key==='Enter')sc()" class="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-sm">
+      <button onclick="sc()" class="px-3 py-2 rounded-xl text-white text-sm font-bold" style="background:var(--brown);">→</button>
+    </div>
+  </div>
+  <button onclick="document.getElementById('chat-win').classList.toggle('hidden')" class="w-13 h-13 w-12 h-12 rounded-full shadow-xl flex items-center justify-center text-xl transition hover:scale-110" style="background:var(--brown);border:2px solid rgba(200,151,58,.4);">☕</button>
+</div>
+
+<script>
+let user = null;
+try { user = JSON.parse(localStorage.getItem('bb_user') || 'null'); } catch(e) { localStorage.removeItem('bb_user'); }
+const token = localStorage.getItem('bb_token');
+const H = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};
+
+// Nav
+const navRight = document.getElementById('nav-right');
+if (token && user) {
+  const isAdmin = ['owner','admin'].includes(user.role);
+  navRight.innerHTML = `
+    <a href="/favorites" class="text-stone-300 hover:text-white text-lg transition" title="Favorit">♡</a>
+    <a href="/cart" class="text-stone-300 hover:text-white text-lg transition" title="Keranjang">🛒</a>
+    <a href="${isAdmin?'/admin':'/orders'}" class="btn-gold px-3 py-1.5 rounded-full text-xs font-semibold text-white">${isAdmin?'Dashboard':'Pesanan'}</a>
+  `;
+} else {
+  navRight.innerHTML = `<a href="/login" class="text-stone-300 hover:text-white text-sm">Masuk</a><a href="/register" class="btn-gold px-4 py-2 rounded-full text-xs font-semibold text-white">Daftar</a>`;
+}
+
+let allProducts = [], currentFilter = 'Semua', favorites = new Set();
+let modalId = null;
+
+function setFilter(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => { b.classList.remove('active'); b.classList.add('bg-white','text-stone-600'); });
+  btn.classList.add('active'); btn.classList.remove('bg-white','text-stone-600');
+  renderProducts();
+}
+
+function applyFilter() { renderProducts(); }
+
+function renderProducts() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = allProducts;
+  if (currentFilter !== 'Semua') filtered = filtered.filter(p => p.category === currentFilter);
+  if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+  
+  const grid = document.getElementById('product-grid');
+  if (!filtered.length) { 
+    grid.innerHTML = '<div class="col-span-4 text-center py-16 text-stone-400"><div class="text-4xl mb-3">🔍</div>Tidak ada menu ditemukan.</div>'; 
+    return; 
+  }
+  
+  grid.innerHTML = filtered.map(p => `
+    <div class="card bg-white rounded-2xl overflow-hidden border border-stone-100 cursor-pointer ${p.stock < 1 ? 'sold-out' : ''}" onclick="openModal(${p.id})">
+      <div class="h-44 overflow-hidden relative bg-stone-100">
+        <img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x300?text=☕'">
+        ${p.is_bestseller ? '<div class="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">⭐ Hits</div>' : ''}
+        <div class="absolute top-3 right-3 ${p.stock > 0 ? 'bg-green-500' : 'bg-stone-400'} text-white text-xs font-bold px-2.5 py-1 rounded-full">${p.stock > 0 ? 'Tersedia' : 'Habis'}</div>
+        <button class="fav-btn absolute bottom-3 right-3 bg-white/90 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow hover:scale-110 transition ${favorites.has(p.id)?'fav-active':''}" onclick="event.stopPropagation();toggleFav(${p.id},this)">♡</button>
+      </div>
+      <div class="p-4">
+        <div class="text-xs font-semibold tracking-wider uppercase mb-1" style="color:var(--gold);">${p.category}</div>
+        <h3 class="font-semibold text-sm mb-1 leading-tight" style="font-family:'Cormorant Garamond',serif;font-size:1rem;">${p.name}</h3>
+        <p class="text-stone-400 text-xs mb-3 leading-relaxed line-clamp-2">${p.description || ''}</p>
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-sm" style="color:var(--brown);">Rp ${Number(p.price).toLocaleString('id-ID')}</div>
+          <button onclick="event.stopPropagation();addToCart(${p.id})" class="btn-gold text-white text-xs px-3 py-1.5 rounded-lg font-semibold" ${p.stock<1?'disabled style="opacity:.5;cursor:not-allowed;"':''}>+ Keranjang</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openModal(id) {
+  const p = allProducts.find(x => x.id === id); if (!p) return;
+  modalId = id;
+  document.getElementById('m-img').src = p.image_url || '';
+  document.getElementById('m-cat').textContent = p.category;
+  document.getElementById('m-name').textContent = p.name;
+  document.getElementById('m-desc').textContent = p.description || 'Minuman spesial dari Backseat Barista.';
+  document.getElementById('m-price').textContent = 'Rp ' + Number(p.price).toLocaleString('id-ID');
+  document.getElementById('m-badge').classList.toggle('hidden', !p.is_bestseller);
+  document.getElementById('m-fav').className = `w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition ${favorites.has(id)?'text-red-500':'text-stone-400'}`;
+  document.getElementById('m-cart').disabled = p.stock < 1;
+  if (p.stock < 1) document.getElementById('m-cart').textContent = 'Stok Habis';
+  else document.getElementById('m-cart').textContent = '+ Keranjang';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal')) document.getElementById('modal').classList.add('hidden'); }
+
+async function addToCart(id) {
+  if (!token) { window.location.href = '/login'; return; }
+  if (user?.role !== 'customer') { showToast('⚠ Owner tidak bisa membeli'); return; }
+  const res = await fetch('/api/cart', { method:'POST', headers:H, body:JSON.stringify({product_id:id, quantity:1}) });
+  const d = await res.json();
+  if (res.ok) showToast('✅ ' + d.message);
+  else showToast('⚠ ' + d.error);
+}
+
+async function toggleFav(id, btn) {
+  if (!token) { window.location.href = '/login'; return; }
+  const res = await fetch('/api/favorites/toggle', { method:'POST', headers:H, body:JSON.stringify({product_id:id}) });
+  const d = await res.json();
+  if (res.ok) {
+    if (d.action === 'added') { favorites.add(id); showToast('❤ Ditambahkan ke favorit'); }
+    else { favorites.delete(id); showToast('🗑 Dihapus dari favorit'); }
+    renderProducts();
+    if (document.getElementById('modal') && !document.getElementById('modal').classList.contains('hidden')) {
+      document.getElementById('m-fav').className = `w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center text-xl hover:border-red-300 transition ${favorites.has(id)?'text-red-500':'text-stone-400'}`;
+    }
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2500);
+}
+
+async function sc() {
+  const ci = document.getElementById('ci');
+  const msg = ci.value.trim(); if (!msg) return;
+  const box = document.getElementById('chat-msgs');
+  
+  box.innerHTML += `<div class="flex justify-end"><div class="bg-stone-800 text-white px-3 py-2 rounded-2xl rounded-tr-none text-sm max-w-xs">${msg}</div></div>`;
+  ci.value = ''; box.scrollTop = box.scrollHeight;
+  box.innerHTML += `<div id="typing2" class="bg-white border border-stone-200 px-3 py-2 rounded-2xl rounded-tl-none text-stone-400 text-sm">...</div>`;
+  
+  const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  const data = await res.json();
+  
+  document.getElementById('typing2')?.remove();
+  box.innerHTML += `<div class="bg-white border border-stone-200 px-3 py-2 rounded-2xl rounded-tl-none text-stone-700 text-sm max-w-xs">${data.reply}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+// FIX: New Load Data Logic
+async function loadData() {
+  try {
+    if (token) {
+      const fRes = await fetch('/api/favorites', {headers:H});
+      if (fRes.ok) { const fData = await fRes.json(); fData.forEach(f => favorites.add(f.id)); }
+    }
+  } catch(e) { console.error(e); }
+
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) throw new Error('API Error');
+    allProducts = await res.json();
+    renderProducts();
+  } catch(err) {
+    document.getElementById('product-grid').innerHTML = `
+      <div class="col-span-4 text-center py-16">
+        <div class="text-4xl mb-3">⚠️</div>
+        <div class="text-red-600 font-bold mb-2">Gagal Terhubung ke Server</div>
+        <div class="text-stone-500 text-sm">Database sedang dimuat atau terjadi error. Silakan refresh halaman.</div>
+      </div>`;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
