@@ -10,9 +10,7 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'backseat-barista-secret-2025';
-
-// FIX UTAMA: Ganti nama file DB agar Railway membuang file yang rusak!
-const DB_PATH = './backseat_fresh.db'; 
+const DB_PATH = './.backseat.db';
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -30,105 +28,82 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// PENGATURAN DATABASE (Anti-Crash)
+// MENGGUNAKAN SQL.JS PERSIS SEPERTI ABU FARM
 let db;
-function saveDb() { 
-  try { 
-    fs.writeFileSync(DB_PATH, Buffer.from(db.export())); 
-  } catch(e) { console.error("Gagal simpan DB", e); } 
-}
-function run(sql, params = []) { try { db.run(sql, params); saveDb(); } catch(e) { console.error(e); } }
-function get(sql, params = []) { try { const stmt = db.prepare(sql); stmt.bind(params); if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; } stmt.free(); return null; } catch(e) { return null; } }
-function all(sql, params = []) { try { const stmt = db.prepare(sql); stmt.bind(params); const res = []; while (stmt.step()) res.push(stmt.getAsObject()); stmt.free(); return res; } catch(e) { return []; } }
+function saveDb() { fs.writeFile(DB_PATH, Buffer.from(db.export()), err => { if (err) console.error(err); }); }
+function run(sql, params = []) { db.run(sql, params); saveDb(); }
+function get(sql, params = []) { const stmt = db.prepare(sql); stmt.bind(params); if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; } stmt.free(); return null; }
+function all(sql, params = []) { const stmt = db.prepare(sql); stmt.bind(params); const res = []; while (stmt.step()) res.push(stmt.getAsObject()); stmt.free(); return res; }
 
 async function initDb() {
-  try {
-    const SQL = await initSqlJs();
-    let loaded = false;
-    
-    if (fs.existsSync(DB_PATH)) {
-      try {
-        const fileBuffer = fs.readFileSync(DB_PATH);
-        if (fileBuffer.length > 0) {
-          db = new SQL.Database(fileBuffer);
-          console.log('✅ Database Dimuat');
-          loaded = true;
-        }
-      } catch(e) { console.log('⚠️ DB Korup, membuat baru'); }
-    }
-    
-    if (!loaded) {
-      db = new SQL.Database();
-      console.log('✅ Database Baru Dibuat');
-    }
+  const SQL = await initSqlJs();
+  if (fs.existsSync(DB_PATH)) { db = new SQL.Database(fs.readFileSync(DB_PATH)); console.log('✅ Database Dimuat'); }
+  else { db = new SQL.Database(); console.log('✅ Database Baru Dibuat'); }
 
-    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, address TEXT, role TEXT DEFAULT 'customer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-    db.run(`CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, price INTEGER NOT NULL, category TEXT DEFAULT 'Kopi', image_url TEXT, stock INTEGER DEFAULT 10, is_active INTEGER DEFAULT 1, is_bestseller INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-    db.run(`CREATE TABLE IF NOT EXISTS cart (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, quantity INTEGER DEFAULT 1, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(product_id) REFERENCES products(id))`);
-    db.run(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, UNIQUE(user_id, product_id))`);
-    db.run(`CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT UNIQUE, user_id INTEGER, total_price INTEGER, status TEXT DEFAULT 'Menunggu Pembayaran', payment_proof TEXT, reject_reason TEXT, delivery_address TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-    db.run(`CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT, product_id INTEGER, quantity INTEGER, price INTEGER, product_name TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS collaborations (id INTEGER PRIMARY KEY AUTOINCREMENT, business_name TEXT, product_type TEXT, contact TEXT, message TEXT, status TEXT DEFAULT 'Pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, address TEXT, role TEXT DEFAULT 'customer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, price INTEGER NOT NULL, category TEXT DEFAULT 'Kopi', image_url TEXT, stock INTEGER DEFAULT 10, is_active INTEGER DEFAULT 1, is_bestseller INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE TABLE IF NOT EXISTS cart (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, quantity INTEGER DEFAULT 1, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(product_id) REFERENCES products(id))`);
+  db.run(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, UNIQUE(user_id, product_id))`);
+  db.run(`CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT UNIQUE, user_id INTEGER, total_price INTEGER, status TEXT DEFAULT 'Menunggu Pembayaran', payment_proof TEXT, reject_reason TEXT, delivery_address TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+  db.run(`CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT, product_id INTEGER, quantity INTEGER, price INTEGER, product_name TEXT)`);
+  db.run(`CREATE TABLE IF NOT EXISTS collaborations (id INTEGER PRIMARY KEY AUTOINCREMENT, business_name TEXT, product_type TEXT, contact TEXT, message TEXT, status TEXT DEFAULT 'Pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
 
-    if (!get("SELECT id FROM users WHERE role='owner'")) {
-      const hash = bcrypt.hashSync('owner123', 10);
-      db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
-    }
-    if (!get("SELECT id FROM users WHERE role='admin'")) {
-      const hash = bcrypt.hashSync('admin123', 10);
-      db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
-    }
-
-    if (!get("SELECT id FROM products LIMIT 1")) {
-      const products = [
-        ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
-        ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
-        ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
-        ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
-        ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0],
-        ['Taro Milk Tea', 'Minuman talas ungu creamy.', 24000, 'Non-Kopi', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500', 15, 1, 0],
-        ['Espresso Shot', 'Double shot espresso dari biji kopi single origin.', 18000, 'Kopi', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500', 25, 1, 0],
-        ['Chocolate Frappe', 'Blended chocolate dengan whipped cream.', 32000, 'Non-Kopi', 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500', 10, 1, 0],
-        ['Avocado Coffee', 'Perpaduan unik alpukat creamy dengan espresso.', 35000, 'Kopi', 'https://images.unsplash.com/photo-1592334873219-f6729cbfb501?w=500', 8, 1, 1],
-        ['Lemon Mojito', 'Mocktail segar dengan lemon, mint, dan soda.', 20000, 'Non-Kopi', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500', 18, 1, 0],
-      ];
-      for (const p of products) {
-        db.run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
-      }
-    }
-    saveDb();
-  } catch (error) {
-    console.error("FATAL ERROR SAAT INIT DB:", error);
+  if (!get("SELECT id FROM users WHERE role='owner'")) {
+    const hash = bcrypt.hashSync('owner123', 10);
+    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
   }
+  if (!get("SELECT id FROM users WHERE role='admin'")) {
+    const hash = bcrypt.hashSync('admin123', 10);
+    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
+  }
+
+  if (!get("SELECT id FROM products LIMIT 1")) {
+    const products = [
+      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
+      ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
+      ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
+      ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
+      ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0],
+      ['Taro Milk Tea', 'Minuman talas ungu creamy.', 24000, 'Non-Kopi', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500', 15, 1, 0],
+      ['Espresso Shot', 'Double shot espresso dari biji kopi single origin.', 18000, 'Kopi', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500', 25, 1, 0],
+      ['Chocolate Frappe', 'Blended chocolate dengan whipped cream.', 32000, 'Non-Kopi', 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500', 10, 1, 0],
+      ['Avocado Coffee', 'Perpaduan unik alpukat creamy dengan espresso.', 35000, 'Kopi', 'https://images.unsplash.com/photo-1592334873219-f6729cbfb501?w=500', 8, 1, 1],
+      ['Lemon Mojito', 'Mocktail segar dengan lemon, mint, dan soda.', 20000, 'Non-Kopi', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500', 18, 1, 0],
+    ];
+    for (const p of products) {
+      db.run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
+    }
+  }
+  saveDb();
 }
 
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Akses ditolak' });
   try { req.user = jwt.verify(token, JWT_SECRET); next(); }
-  catch { res.status(401).json({ error: 'Sesi habis, silakan login kembali' }); }
+  catch { res.status(401).json({ error: 'Sesi habis' }); }
 };
 const ownerOnly = (req, res, next) => {
   auth(req, res, () => {
-    if (!['owner', 'admin'].includes(req.user.role)) return res.status(403).json({ error: 'Akses ditolak' });
+    if (!['owner', 'admin'].includes(req.user.role)) return res.status(403).json({ error: 'Hanya Admin' });
     next();
   });
 };
 
 app.post('/api/auth/register', (req, res) => {
-  const { name, email, password, phone, address } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ error: 'Semua field wajib diisi' });
-  if (get("SELECT id FROM users WHERE email=?", [email])) return res.status(400).json({ error: 'Email sudah terdaftar' });
-  run("INSERT INTO users (name,email,password,phone,address) VALUES (?,?,?,?,?)", [name, email, bcrypt.hashSync(password, 10), phone || '', address || '']);
-  res.json({ success: true, message: 'Registrasi berhasil' });
+  try {
+    const { name, email, password, phone, address } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Semua field wajib diisi' });
+    run("INSERT INTO users (name,email,password,phone,address) VALUES (?,?,?,?,?)", [name, email, bcrypt.hashSync(password, 10), phone || '', address || '']);
+    res.json({ success: true });
+  } catch (e) { res.status(400).json({ error: 'Email sudah terdaftar' }); }
 });
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const u = get("SELECT * FROM users WHERE email=?", [email]);
   if (!u || !bcrypt.compareSync(password, u.password)) return res.status(401).json({ error: 'Email atau password salah' });
-  const token = jwt.sign({ id: u.id, role: u.role, name: u.name, email: u.email }, JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: u.id, name: u.name, email: u.email, role: u.role } });
+  res.json({ token: jwt.sign({ id: u.id, role: u.role, name: u.name }, JWT_SECRET, { expiresIn: '7d' }), user: { name: u.name, role: u.role, email: u.email } });
 });
 
 app.post('/api/upload', ownerOnly, upload.single('image'), (req, res) => {
@@ -182,7 +157,7 @@ app.put('/api/cart/:id', auth, (req, res) => {
   const qty = parseInt(req.body.quantity);
   const item = get("SELECT c.*, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.id=? AND c.user_id=?", [req.params.id, req.user.id]);
   if (!item) return res.status(404).json({ error: 'Item tidak ditemukan' });
-  if (qty > item.stock) return res.status(400).json({ error: `Stok tidak mencukupi. Tersedia: ${item.stock}` });
+  if (qty > item.stock) return res.status(400).json({ error: `Stok tidak mencukupi.` });
   if (qty <= 0) { run("DELETE FROM cart WHERE id=?", [req.params.id]); return res.json({ success: true }); }
   run("UPDATE cart SET quantity=? WHERE id=?", [qty, req.params.id]);
   res.json({ success: true });
@@ -207,7 +182,11 @@ app.post('/api/favorites/toggle', auth, (req, res) => {
 app.post('/api/orders/checkout', auth, (req, res) => {
   const { delivery_address, notes } = req.body;
   const cartItems = all("SELECT c.quantity, p.id, p.name, p.price, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.user_id=?", [req.user.id]);
-  if (!cartItems.length) return res.status(400).json({ error: 'Keranjang masih kosong' });
+  if (!cartItems.length) return res.status(400).json({ error: 'Keranjang kosong' });
+
+  for (const item of cartItems) {
+    if (item.quantity > item.stock) return res.status(400).json({ error: `Stok ${item.name} tidak mencukupi` });
+  }
 
   const orderId = 'ORD-' + Date.now().toString().slice(-8);
   const total = cartItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -233,6 +212,7 @@ app.post('/api/orders/:orderId/payment', auth, upload.single('proof'), (req, res
 
 app.post('/api/collaboration', (req, res) => {
   const { business_name, product_type, contact, message } = req.body;
+  if (!business_name || !contact) return res.status(400).json({ error: 'Form tidak lengkap' });
   run("INSERT INTO collaborations (business_name, product_type, contact, message) VALUES (?,?,?,?)", [business_name, product_type, contact, message || '']);
   res.json({ success: true, message: 'Pengajuan berhasil dikirim' });
 });
@@ -286,14 +266,13 @@ app.get('/api/admin/bestsellers', ownerOnly, (req, res) => {
   res.json(all("SELECT p.name, SUM(oi.quantity) as total_sold FROM order_items oi JOIN products p ON oi.product_id=p.id GROUP BY p.id ORDER BY total_sold DESC LIMIT 5"));
 });
 
-// NATIVE FETCH AI CHATBOT PERSIS ABU FARM
+// AI CHATBOT (PERSIS SEPERTI ABU FARM)
 app.post('/api/chat', async (req, res) => {
   try {
-    const message = req.body.message || "";
-    const msg = message.toLowerCase();
-    
-    // Auto Reply Dasar
+    const { message } = req.body;
     let reply = '';
+    const msg = (message || '').toLowerCase();
+    
     if (msg.includes('menu') || msg.includes('produk') || msg.includes('apa saja')) {
       reply = `Berikut menu kami:\n☕ Kopi: Iced Palm Sugar, Cold Brew, Caramel Latte.\n🍵 Non-Kopi: Matcha, Thai Tea, Taro, Lemon Mojito.\nLihat lengkap di halaman Menu! 😊`;
     } else if (msg.includes('harga') || msg.includes('berapa')) {
@@ -307,11 +286,8 @@ app.post('/api/chat', async (req, res) => {
     try {
       const key = process.env.GROQ_API_KEY;
       if (key && !reply) {
-        let stokInfo = "";
-        try {
-            const info = all("SELECT name, price, stock FROM products WHERE is_active=1 AND stock > 0");
-            stokInfo = info.map(t => `${t.name} (Rp${Number(t.price)}, stok:${t.stock})`).join('; ');
-        } catch(e) {}
+        const info = all("SELECT name, price, stock FROM products WHERE is_active=1 AND stock > 0");
+        const stokInfo = info.map(t => `${t.name} (Rp${Number(t.price)}, stok:${t.stock})`).join('; ');
         
         const prompt = `Kamu asisten virtual Backseat Barista (Kopi online di Bogor). Jawab ramah & singkat. Stok: ${stokInfo}. User: "${message}"`;
         const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
@@ -340,4 +316,7 @@ app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
   app.get('/' + p, (req, res) => res.sendFile(path.join(publicDir, p + '.html')));
 });
 
-initDb().then(() => app.listen(PORT, () => console.log(`☕ Backseat Barista running on port ${PORT}`)));
+// FIX PALING PENTING: .then() ini wajib ada agar server tidak crash saat boot
+initDb().then(() => {
+  app.listen(PORT, () => console.log(`☕ Backseat Barista running on port ${PORT}`));
+}).catch(err => console.error("Gagal menyalakan server:", err));
