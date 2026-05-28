@@ -11,8 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'backseat-barista-secret-2025';
 
-// KUNCI UTAMA: Kita ganti nama file DB-nya agar Railway membuat database yang benar-benar baru
-const DB_PATH = './.backseat_final_v1.db';
+// FIX UTAMA: Ganti nama file DB agar Railway membuang file yang rusak!
+const DB_PATH = './backseat_fresh.db'; 
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -30,65 +30,77 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// PENGATURAN DATABASE YANG ANTI-CRASH
+// PENGATURAN DATABASE (Anti-Crash)
 let db;
 function saveDb() { 
-    try { fs.writeFileSync(DB_PATH, Buffer.from(db.export())); } catch(e) { console.error("Gagal simpan DB"); }
+  try { 
+    fs.writeFileSync(DB_PATH, Buffer.from(db.export())); 
+  } catch(e) { console.error("Gagal simpan DB", e); } 
 }
-function run(sql, params = []) { 
-    try { db.run(sql, params); saveDb(); } catch(e) { console.error(e); } 
-}
-function get(sql, params = []) { 
-    try { const stmt = db.prepare(sql); stmt.bind(params); if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; } stmt.free(); return null; } 
-    catch(e) { return null; } 
-}
-function all(sql, params = []) { 
-    try { const stmt = db.prepare(sql); stmt.bind(params); const res = []; while (stmt.step()) res.push(stmt.getAsObject()); stmt.free(); return res; } 
-    catch(e) { return []; } 
-}
+function run(sql, params = []) { try { db.run(sql, params); saveDb(); } catch(e) { console.error(e); } }
+function get(sql, params = []) { try { const stmt = db.prepare(sql); stmt.bind(params); if (stmt.step()) { const r = stmt.getAsObject(); stmt.free(); return r; } stmt.free(); return null; } catch(e) { return null; } }
+function all(sql, params = []) { try { const stmt = db.prepare(sql); stmt.bind(params); const res = []; while (stmt.step()) res.push(stmt.getAsObject()); stmt.free(); return res; } catch(e) { return []; } }
 
 async function initDb() {
-  const SQL = await initSqlJs();
-  if (fs.existsSync(DB_PATH)) { 
-      try { db = new SQL.Database(fs.readFileSync(DB_PATH)); console.log('✅ Database Dimuat'); } 
-      catch(e) { db = new SQL.Database(); console.log('⚠️ Database lama korup, membuat baru'); }
-  } else { 
-      db = new SQL.Database(); console.log('✅ Database Baru Dibuat'); 
-  }
-
-  db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, address TEXT, role TEXT DEFAULT 'customer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-  db.run(`CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, price INTEGER NOT NULL, category TEXT DEFAULT 'Kopi', image_url TEXT, stock INTEGER DEFAULT 10, is_active INTEGER DEFAULT 1, is_bestseller INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-  db.run(`CREATE TABLE IF NOT EXISTS cart (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, quantity INTEGER DEFAULT 1, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(product_id) REFERENCES products(id))`);
-  db.run(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, UNIQUE(user_id, product_id))`);
-  db.run(`CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT UNIQUE, user_id INTEGER, total_price INTEGER, status TEXT DEFAULT 'Menunggu Pembayaran', payment_proof TEXT, reject_reason TEXT, delivery_address TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-  db.run(`CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT, product_id INTEGER, quantity INTEGER, price INTEGER, product_name TEXT)`);
-  db.run(`CREATE TABLE IF NOT EXISTS collaborations (id INTEGER PRIMARY KEY AUTOINCREMENT, business_name TEXT, product_type TEXT, contact TEXT, message TEXT, status TEXT DEFAULT 'Pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-
-  if (!get("SELECT id FROM users WHERE role='owner'")) {
-    const hash = bcrypt.hashSync('owner123', 10);
-    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
-  }
-  if (!get("SELECT id FROM users WHERE role='admin'")) {
-    const hash = bcrypt.hashSync('admin123', 10);
-    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
-  }
-
-  // SEEDER DATA MENU
-  if (!get("SELECT id FROM products LIMIT 1")) {
-    const products = [
-      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
-      ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
-      ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
-      ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
-      ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0]
-    ];
-    for (const p of products) {
-      db.run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
+  try {
+    const SQL = await initSqlJs();
+    let loaded = false;
+    
+    if (fs.existsSync(DB_PATH)) {
+      try {
+        const fileBuffer = fs.readFileSync(DB_PATH);
+        if (fileBuffer.length > 0) {
+          db = new SQL.Database(fileBuffer);
+          console.log('✅ Database Dimuat');
+          loaded = true;
+        }
+      } catch(e) { console.log('⚠️ DB Korup, membuat baru'); }
     }
+    
+    if (!loaded) {
+      db = new SQL.Database();
+      console.log('✅ Database Baru Dibuat');
+    }
+
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, address TEXT, role TEXT DEFAULT 'customer', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, price INTEGER NOT NULL, category TEXT DEFAULT 'Kopi', image_url TEXT, stock INTEGER DEFAULT 10, is_active INTEGER DEFAULT 1, is_bestseller INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS cart (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, quantity INTEGER DEFAULT 1, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(product_id) REFERENCES products(id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, product_id INTEGER, UNIQUE(user_id, product_id))`);
+    db.run(`CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT UNIQUE, user_id INTEGER, total_price INTEGER, status TEXT DEFAULT 'Menunggu Pembayaran', payment_proof TEXT, reject_reason TEXT, delivery_address TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT, product_id INTEGER, quantity INTEGER, price INTEGER, product_name TEXT)`);
+    db.run(`CREATE TABLE IF NOT EXISTS collaborations (id INTEGER PRIMARY KEY AUTOINCREMENT, business_name TEXT, product_type TEXT, contact TEXT, message TEXT, status TEXT DEFAULT 'Pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+
+    if (!get("SELECT id FROM users WHERE role='owner'")) {
+      const hash = bcrypt.hashSync('owner123', 10);
+      db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
+    }
+    if (!get("SELECT id FROM users WHERE role='admin'")) {
+      const hash = bcrypt.hashSync('admin123', 10);
+      db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
+    }
+
+    if (!get("SELECT id FROM products LIMIT 1")) {
+      const products = [
+        ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
+        ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
+        ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
+        ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
+        ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0],
+        ['Taro Milk Tea', 'Minuman talas ungu creamy.', 24000, 'Non-Kopi', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500', 15, 1, 0],
+        ['Espresso Shot', 'Double shot espresso dari biji kopi single origin.', 18000, 'Kopi', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500', 25, 1, 0],
+        ['Chocolate Frappe', 'Blended chocolate dengan whipped cream.', 32000, 'Non-Kopi', 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500', 10, 1, 0],
+        ['Avocado Coffee', 'Perpaduan unik alpukat creamy dengan espresso.', 35000, 'Kopi', 'https://images.unsplash.com/photo-1592334873219-f6729cbfb501?w=500', 8, 1, 1],
+        ['Lemon Mojito', 'Mocktail segar dengan lemon, mint, dan soda.', 20000, 'Non-Kopi', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500', 18, 1, 0],
+      ];
+      for (const p of products) {
+        db.run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
+      }
+    }
+    saveDb();
+  } catch (error) {
+    console.error("FATAL ERROR SAAT INIT DB:", error);
   }
-  saveDb();
 }
-initDb();
 
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -277,11 +289,11 @@ app.get('/api/admin/bestsellers', ownerOnly, (req, res) => {
 // NATIVE FETCH AI CHATBOT PERSIS ABU FARM
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const message = req.body.message || "";
+    const msg = message.toLowerCase();
     
     // Auto Reply Dasar
     let reply = '';
-    const msg = message.toLowerCase();
     if (msg.includes('menu') || msg.includes('produk') || msg.includes('apa saja')) {
       reply = `Berikut menu kami:\n☕ Kopi: Iced Palm Sugar, Cold Brew, Caramel Latte.\n🍵 Non-Kopi: Matcha, Thai Tea, Taro, Lemon Mojito.\nLihat lengkap di halaman Menu! 😊`;
     } else if (msg.includes('harga') || msg.includes('berapa')) {
