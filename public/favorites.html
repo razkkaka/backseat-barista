@@ -1,1 +1,116 @@
-﻿<!DOCTYPE html><html lang="id"><head>  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">  <title>Favorit — Backseat Barista</title>  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">  <script src="https://cdn.tailwindcss.com"></script>  <style>    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}    .nav-glass{background:rgba(26,14,7,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,151,58,.15);}    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}    .btn-gold:hover{box-shadow:0 6px 20px rgba(200,151,58,.4);}    .card{transition:all .3s;} .card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(26,14,7,.08);}    .toast{position:fixed;top:80px;right:20px;z-index:200;animation:slideIn .3s ease both;}    @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}  </style></head><body><nav class="nav-glass fixed top-0 w-full z-50">  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">    <a href="/" class="text-white font-semibold" style="font-family:'Cormorant Garamond',serif;">☕ Backseat Barista</a>    <div class="flex items-center gap-3 text-sm">      <a href="/menu" class="text-stone-300 hover:text-white">Menu</a>      <a href="/cart" class="text-stone-300 hover:text-white">🛒</a>      <a href="/orders" class="text-stone-300 hover:text-white">Pesanan</a>    </div>  </div></nav><div class="pt-24 pb-20 max-w-5xl mx-auto px-6">  <h1 class="text-4xl font-bold mb-2" style="font-family:'Cormorant Garamond',serif;">Daftar Favorit</h1>  <p class="text-stone-500 text-sm mb-10">Minuman yang pernah kamu simpan.</p>  <div id="empty" class="hidden text-center py-24">    <div class="text-6xl mb-4">♡</div>    <h2 class="text-2xl font-semibold mb-3" style="font-family:'Cormorant Garamond',serif;">Belum Ada Favorit</h2>    <p class="text-stone-500 mb-8">Tap ikon ♡ di menu untuk menyimpan favoritmu.</p>    <a href="/menu" class="btn-gold inline-block px-8 py-3.5 rounded-full text-white font-semibold text-sm">Lihat Menu →</a>  </div>  <div id="fav-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div></div><div id="toast" class="toast hidden bg-stone-900 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-50"></div><script>  const token = localStorage.getItem('bb_token');  if (!token) window.location.href='/login';  const H = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};  async function load() {    const res = await fetch('/api/favorites',{headers:H});    const data = await res.json();    if (!data.length){document.getElementById('empty').classList.remove('hidden');return;}    document.getElementById('fav-grid').innerHTML = data.map(p=>`      <div class="card bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm">        <div class="h-44 overflow-hidden bg-stone-100 relative">          <img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400?text=☕'">          <button onclick="removeFav(${p.id})" class="absolute top-3 right-3 bg-white/90 w-8 h-8 rounded-full flex items-center justify-center text-red-500 text-sm shadow hover:scale-110 transition">♥</button>        </div>        <div class="p-4">          <div class="text-xs font-semibold tracking-wider uppercase mb-1" style="color:var(--gold);">${p.category}</div>          <h3 class="font-semibold text-sm mb-2" style="font-family:'Cormorant Garamond',serif;font-size:1rem;">${p.name}</h3>          <div class="flex items-center justify-between">            <div class="font-bold text-sm" style="color:var(--brown);">Rp ${Number(p.price).toLocaleString('id-ID')}</div>            <button onclick="addCart(${p.id})" class="btn-gold text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Keranjang</button>          </div>        </div>      </div>    `).join('');  }  async function removeFav(id) {    await fetch('/api/favorites/toggle',{method:'POST',headers:H,body:JSON.stringify({product_id:id})});    showToast('🗑 Dihapus dari favorit'); load();  }  async function addCart(id) {    const res = await fetch('/api/cart',{method:'POST',headers:H,body:JSON.stringify({product_id:id,quantity:1})});    const d = await res.json();    showToast(res.ok ? '✅ '+d.message : '⚠ '+d.error);  }  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500);}  load();</script></body></html>
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Favorit — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {--gold:#c8973a; --brown:#1a0e07; --cream:#f5efe6;}
+    body {font-family:'DM Sans',sans-serif; background:var(--cream); margin:0;}
+    .nav-glass {background:rgba(26,14,7,.88); backdrop-filter:blur(20px); border-bottom:1px solid rgba(200,151,58,.15);}
+    .btn-gold {background:linear-gradient(135deg,var(--gold),#a87a2e); transition:all .3s;}
+    .btn-gold:hover {box-shadow:0 6px 20px rgba(200,151,58,.4);}
+    .card {transition:all .3s;} 
+    .card:hover {transform:translateY(-4px); box-shadow:0 16px 32px rgba(26,14,7,.08);}
+    .toast {position:fixed; top:80px; right:20px; z-index:200; animation:slideIn .3s ease both;}
+    @keyframes slideIn { from{opacity:0; transform:translateX(40px)} to{opacity:1; transform:translateX(0)} }
+  </style>
+</head>
+<body>
+<nav class="nav-glass fixed top-0 w-full z-50">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="text-white font-semibold" style="font-family:'Cormorant Garamond',serif;">☕ Backseat Barista</a>
+    <div class="flex items-center gap-3 text-sm">
+      <a href="/menu" class="text-stone-300 hover:text-white">Menu</a>
+      <a href="/cart" class="text-stone-300 hover:text-white">🛒</a>
+      <a href="/orders" class="text-stone-300 hover:text-white">Pesanan</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-20 max-w-5xl mx-auto px-6">
+  <h1 class="text-4xl font-bold mb-2" style="font-family:'Cormorant Garamond',serif;">Daftar Favorit</h1>
+  <p class="text-stone-500 text-sm mb-10">Minuman yang pernah kamu simpan.</p>
+  
+  <div id="empty" class="hidden text-center py-24">
+    <div class="text-6xl mb-4">♡</div>
+    <h2 class="text-2xl font-semibold mb-3" style="font-family:'Cormorant Garamond',serif;">Belum Ada Favorit</h2>
+    <p class="text-stone-500 mb-8">Tap ikon ♡ di menu untuk menyimpan favoritmu.</p>
+    <a href="/menu" class="btn-gold inline-block px-8 py-3.5 rounded-full text-white font-semibold text-sm">Lihat Menu →</a>
+  </div>
+  
+  <div id="fav-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+</div>
+
+<div id="toast" class="toast hidden bg-stone-900 text-white px-5 py-3 rounded-xl text-sm shadow-xl z-50"></div>
+
+<script>
+  const token = localStorage.getItem('bb_token');
+  if (!token) window.location.href = '/login';
+  
+  const H = {'Authorization':'Bearer '+token, 'Content-Type':'application/json'};
+  
+  async function load() {
+    try {
+      const res = await fetch('/api/favorites', {headers:H});
+      const data = await res.json();
+      
+      if (!data.length) {
+        document.getElementById('empty').classList.remove('hidden');
+        return;
+      }
+      
+      document.getElementById('fav-grid').innerHTML = data.map(p => `
+        <div class="card bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm">
+          <div class="h-44 overflow-hidden bg-stone-100 relative">
+            <img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400?text=☕'">
+            <button onclick="removeFav(${p.id})" class="absolute top-3 right-3 bg-white/90 w-8 h-8 rounded-full flex items-center justify-center text-red-500 text-sm shadow hover:scale-110 transition">♥</button>
+          </div>
+          <div class="p-4">
+            <div class="text-xs font-semibold tracking-wider uppercase mb-1" style="color:var(--gold);">${p.category}</div>
+            <h3 class="font-semibold text-sm mb-2" style="font-family:'Cormorant Garamond',serif;font-size:1rem;">${p.name}</h3>
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-sm" style="color:var(--brown);">Rp ${Number(p.price).toLocaleString('id-ID')}</div>
+              <button onclick="addCart(${p.id})" class="btn-gold text-white text-xs px-3 py-1.5 rounded-lg font-semibold">+ Keranjang</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      console.error('Gagal mengambil data favorit', e);
+    }
+  }
+  
+  async function removeFav(id) {
+    try {
+      await fetch('/api/favorites/toggle', {method:'POST', headers:H, body:JSON.stringify({product_id:id})});
+      showToast('🗑 Dihapus dari favorit'); 
+      load();
+    } catch(e) {
+      showToast('⚠ Gagal menghapus favorit');
+    }
+  }
+  
+  async function addCart(id) {
+    try {
+      const res = await fetch('/api/cart', {method:'POST', headers:H, body:JSON.stringify({product_id:id, quantity:1})});
+      const d = await res.json();
+      showToast(res.ok ? '✅ ' + d.message : '⚠ ' + d.error);
+    } catch(e) {
+      showToast('⚠ Gagal menambahkan ke keranjang');
+    }
+  }
+  
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; 
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 2500);
+  }
+  
+  load();
+</script>
+</body>
+</html>

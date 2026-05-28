@@ -1,1 +1,165 @@
-﻿<!DOCTYPE html><html lang="id"><head>  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">  <title>Kolaborasi UMKM — Backseat Barista</title>  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">  <script src="https://cdn.tailwindcss.com"></script>  <style>    :root{--gold:#c8973a;--brown:#1a0e07;--cream:#f5efe6;}    body{font-family:'DM Sans',sans-serif;background:var(--cream);margin:0;}    .nav-glass{background:rgba(26,14,7,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,151,58,.15);}    .btn-gold{background:linear-gradient(135deg,var(--gold),#a87a2e);transition:all .3s;}    .btn-gold:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(200,151,58,.4);}    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(200,151,58,.12);}    .bg-hero{background:linear-gradient(160deg,rgba(26,14,7,.97) 0%,rgba(61,35,20,.92) 100%),url('https://images.unsplash.com/photo-1445116572660-236099ec97a0?q=80&w=1400') center/cover;}  </style></head><body><nav class="nav-glass fixed top-0 w-full z-50">  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">    <a href="/" class="text-white font-semibold" style="font-family:'Cormorant Garamond',serif;">☕ Backseat Barista</a>    <div class="flex gap-6 text-sm font-medium text-stone-300">      <a href="/" class="hover:text-white transition">Beranda</a>      <a href="/menu" class="hover:text-white transition">Menu</a>      <a href="/collaboration" class="text-white">Kolaborasi</a>    </div>    <div id="nav-right"></div>  </div></nav><div class="bg-hero pt-32 pb-20 px-6 text-center">  <div class="text-xs font-semibold tracking-widest uppercase mb-5" style="color:var(--gold);">Kolaborasi UMKM F&B</div>  <h1 class="text-5xl md:text-6xl font-bold text-white mb-5 leading-tight" style="font-family:'Cormorant Garamond',serif;">    Mari <em style="color:#e8c47a;">Berkolaborasi</em>  </h1>  <p class="text-stone-400 max-w-xl mx-auto text-base leading-relaxed">Kami membuka peluang kerjasama bagi pelaku UMKM F&B. Bersama kita tumbuh dan saling mendukung.</p></div><section class="py-16 bg-white">  <div class="max-w-5xl mx-auto px-6">    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">        <div class="text-4xl mb-4">🤝</div>        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Network Bisnis</h3>        <p class="text-stone-500 text-sm">Bergabung dengan jaringan UMKM F&B yang aktif dan saling mendukung.</p>      </div>      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">        <div class="text-4xl mb-4">📣</div>        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Promosi Bersama</h3>        <p class="text-stone-500 text-sm">Produk kamu akan dipromosikan lewat platform digital Backseat Barista.</p>      </div>      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">        <div class="text-4xl mb-4">📈</div>        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Pertumbuhan Usaha</h3>        <p class="text-stone-500 text-sm">Akses ke pelanggan setia Backseat Barista yang aktif berbelanja online.</p>      </div>    </div>  </div></section><section class="py-20 px-6" style="background:var(--cream);">  <div class="max-w-xl mx-auto">    <div class="text-center mb-10">      <div class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--gold);">Formulir Pendaftaran</div>      <h2 class="text-4xl font-bold" style="font-family:'Cormorant Garamond',serif;">Ajukan Kolaborasi</h2>    </div>    <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm">      <div class="space-y-5">        <div>          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Nama Usaha *</label>          <input type="text" id="biz-name" placeholder="KopiKita, SnackCo, dll." class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">        </div>        <div>          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Jenis Produk *</label>          <select id="biz-type" class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">            <option value="">Pilih jenis produk...</option>            <option>Minuman</option><option>Makanan Ringan</option><option>Dessert</option><option>Kue & Roti</option><option>Lainnya</option>          </select>        </div>        <div>          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Nomor Kontak (WhatsApp) *</label>          <input type="tel" id="biz-contact" placeholder="08xxxxxxxxxx" class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">        </div>        <div>          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Pesan / Deskripsi Usaha</label>          <textarea id="biz-msg" rows="4" placeholder="Ceritakan sedikit tentang usaha kamu dan bentuk kolaborasi yang diinginkan..." class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm resize-none"></textarea>        </div>      </div>      <div id="collab-err" class="hidden mt-4 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl"></div>      <div id="collab-ok" class="hidden mt-4 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-3 rounded-xl"></div>      <button onclick="submit()" id="btn-sub" class="btn-gold w-full mt-6 text-white py-4 rounded-xl font-semibold text-sm tracking-wide shadow-lg">Kirim Pengajuan →</button>    </div>  </div></section><footer style="background:var(--brown);" class="py-10 text-center text-stone-400">  <div class="text-white font-semibold text-lg serif mb-2" style="font-family:'Cormorant Garamond',serif;">Backseat Barista</div>  <p class="text-sm">© 2024 All rights reserved.</p></footer><script>  const token = localStorage.getItem('bb_token');  const user = JSON.parse(localStorage.getItem('bb_user')||'null');  const navRight = document.getElementById('nav-right');  if (token && user) {    navRight.innerHTML = `<a href="${['owner','admin'].includes(user.role)?'/admin':'/orders'}" class="text-xs font-semibold px-4 py-2 rounded-full text-white" style="background:var(--gold);">${['owner','admin'].includes(user.role)?'Dashboard':'Pesanan'}</a>`;  } else {    navRight.innerHTML = `<a href="/login" class="text-stone-300 text-sm hover:text-white">Masuk</a>`;  }  async function submit() {    const name = document.getElementById('biz-name').value.trim();    const type = document.getElementById('biz-type').value;    const contact = document.getElementById('biz-contact').value.trim();    const msg = document.getElementById('biz-msg').value.trim();    const err = document.getElementById('collab-err');    const ok = document.getElementById('collab-ok');    const btn = document.getElementById('btn-sub');    err.classList.add('hidden'); ok.classList.add('hidden');    if (!name||!type||!contact){err.textContent='⚠ Nama usaha, jenis produk, dan kontak wajib diisi';err.classList.remove('hidden');return;}    btn.textContent='Mengirim...';btn.disabled=true;    const res = await fetch('/api/collaboration',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({business_name:name,product_type:type,contact,message:msg})});    const d = await res.json();    if (res.ok){ok.textContent='✅ Pengajuan berhasil dikirim! Tim kami akan menghubungi kamu dalam 1-3 hari kerja.';ok.classList.remove('hidden');['biz-name','biz-contact','biz-msg'].forEach(id=>document.getElementById(id).value='');document.getElementById('biz-type').value='';}    else{err.textContent='⚠ '+(d.error||'Gagal');err.classList.remove('hidden');}    btn.textContent='Kirim Pengajuan →';btn.disabled=false;  }</script></body></html>
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Kolaborasi UMKM — Backseat Barista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {--gold:#c8973a; --brown:#1a0e07; --cream:#f5efe6;}
+    body {font-family:'DM Sans',sans-serif; background:var(--cream); margin:0;}
+    .nav-glass {background:rgba(26,14,7,.88); backdrop-filter:blur(20px); border-bottom:1px solid rgba(200,151,58,.15);}
+    .btn-gold {background:linear-gradient(135deg,var(--gold),#a87a2e); transition:all .3s;}
+    .btn-gold:hover {transform:translateY(-1px); box-shadow:0 8px 24px rgba(200,151,58,.4);}
+    input:focus, textarea:focus, select:focus {outline:none; border-color:var(--gold)!important; box-shadow:0 0 0 3px rgba(200,151,58,.12);}
+    .bg-hero {background:linear-gradient(160deg,rgba(26,14,7,.97) 0%,rgba(61,35,20,.92) 100%),url('https://images.unsplash.com/photo-1445116572660-236099ec97a0?q=80&w=1400') center/cover;}
+  </style>
+</head>
+<body>
+<nav class="nav-glass fixed top-0 w-full z-50">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="text-white font-semibold" style="font-family:'Cormorant Garamond',serif;">☕ Backseat Barista</a>
+    <div class="flex gap-6 text-sm font-medium text-stone-300">
+      <a href="/" class="hover:text-white transition">Beranda</a>
+      <a href="/menu" class="hover:text-white transition">Menu</a>
+      <a href="/collaboration" class="text-white">Kolaborasi</a>
+    </div>
+    <div id="nav-right"></div>
+  </div>
+</nav>
+
+<div class="bg-hero pt-32 pb-20 px-6 text-center">
+  <div class="text-xs font-semibold tracking-widest uppercase mb-5" style="color:var(--gold);">Kolaborasi UMKM F&B</div>
+  <h1 class="text-5xl md:text-6xl font-bold text-white mb-5 leading-tight" style="font-family:'Cormorant Garamond',serif;">
+    Mari <em style="color:#e8c47a;">Berkolaborasi</em>
+  </h1>
+  <p class="text-stone-400 max-w-xl mx-auto text-base leading-relaxed">Kami membuka peluang kerjasama bagi pelaku UMKM F&B. Bersama kita tumbuh dan saling mendukung.</p>
+</div>
+
+<section class="py-16 bg-white">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">
+        <div class="text-4xl mb-4">🤝</div>
+        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Network Bisnis</h3>
+        <p class="text-stone-500 text-sm">Bergabung dengan jaringan UMKM F&B yang aktif dan saling mendukung.</p>
+      </div>
+      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">
+        <div class="text-4xl mb-4">📣</div>
+        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Promosi Bersama</h3>
+        <p class="text-stone-500 text-sm">Produk kamu akan dipromosikan lewat platform digital Backseat Barista.</p>
+      </div>
+      <div class="text-center p-8 rounded-2xl border border-stone-100 hover:border-amber-200 transition">
+        <div class="text-4xl mb-4">📈</div>
+        <h3 class="font-semibold text-lg mb-2" style="font-family:'Cormorant Garamond',serif;">Pertumbuhan Usaha</h3>
+        <p class="text-stone-500 text-sm">Akses ke pelanggan setia Backseat Barista yang aktif berbelanja online.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-20 px-6" style="background:var(--cream);">
+  <div class="max-w-xl mx-auto">
+    <div class="text-center mb-10">
+      <div class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--gold);">Formulir Pendaftaran</div>
+      <h2 class="text-4xl font-bold" style="font-family:'Cormorant Garamond',serif;">Ajukan Kolaborasi</h2>
+    </div>
+    <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm">
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Nama Usaha *</label>
+          <input type="text" id="biz-name" placeholder="KopiKita, SnackCo, dll." class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Jenis Produk *</label>
+          <select id="biz-type" class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">
+            <option value="">Pilih jenis produk...</option>
+            <option>Minuman</option>
+            <option>Makanan Ringan</option>
+            <option>Dessert</option>
+            <option>Kue & Roti</option>
+            <option>Lainnya</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Nomor Kontak (WhatsApp) *</label>
+          <input type="tel" id="biz-contact" placeholder="08xxxxxxxxxx" class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1.5">Pesan / Deskripsi Usaha</label>
+          <textarea id="biz-msg" rows="4" placeholder="Ceritakan sedikit tentang usaha kamu dan bentuk kolaborasi yang diinginkan..." class="w-full bg-stone-50 border border-stone-200 px-4 py-3.5 rounded-xl text-sm resize-none"></textarea>
+        </div>
+      </div>
+      <div id="collab-err" class="hidden mt-4 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl"></div>
+      <div id="collab-ok" class="hidden mt-4 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-3 rounded-xl"></div>
+      <button onclick="submit()" id="btn-sub" class="btn-gold w-full mt-6 text-white py-4 rounded-xl font-semibold text-sm tracking-wide shadow-lg">Kirim Pengajuan →</button>
+    </div>
+  </div>
+</section>
+
+<footer style="background:var(--brown);" class="py-10 text-center text-stone-400">
+  <div class="text-white font-semibold text-lg serif mb-2" style="font-family:'Cormorant Garamond',serif;">Backseat Barista</div>
+  <p class="text-sm">© 2024 All rights reserved.</p>
+</footer>
+
+<script>
+  const token = localStorage.getItem('bb_token');
+  const user = JSON.parse(localStorage.getItem('bb_user')||'null');
+  const navRight = document.getElementById('nav-right');
+  
+  if (token && user) {
+    navRight.innerHTML = `<a href="${['owner','admin'].includes(user.role)?'/admin':'/orders'}" class="text-xs font-semibold px-4 py-2 rounded-full text-white" style="background:var(--gold);">${['owner','admin'].includes(user.role)?'Dashboard':'Pesanan'}</a>`;
+  } else {
+    navRight.innerHTML = `<a href="/login" class="text-stone-300 text-sm hover:text-white">Masuk</a>`;
+  }
+
+  async function submit() {
+    const name = document.getElementById('biz-name').value.trim();
+    const type = document.getElementById('biz-type').value;
+    const contact = document.getElementById('biz-contact').value.trim();
+    const msg = document.getElementById('biz-msg').value.trim();
+    const err = document.getElementById('collab-err');
+    const ok = document.getElementById('collab-ok');
+    const btn = document.getElementById('btn-sub');
+    
+    err.classList.add('hidden'); 
+    ok.classList.add('hidden');
+    
+    if (!name || !type || !contact) {
+      err.textContent = '⚠ Nama usaha, jenis produk, dan kontak wajib diisi';
+      err.classList.remove('hidden');
+      return;
+    }
+    
+    btn.textContent = 'Mengirim...';
+    btn.disabled = true;
+    
+    try {
+      const res = await fetch('/api/collaboration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business_name: name, product_type: type, contact: contact, message: msg })
+      });
+      const d = await res.json();
+      
+      if (res.ok) {
+        ok.textContent = '✅ Pengajuan berhasil dikirim! Tim kami akan menghubungi kamu dalam 1-3 hari kerja.';
+        ok.classList.remove('hidden');
+        ['biz-name','biz-contact','biz-msg'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('biz-type').value = '';
+      } else {
+        err.textContent = '⚠ ' + (d.error || 'Gagal');
+        err.classList.remove('hidden');
+      }
+    } catch(e) {
+      err.textContent = '⚠ Gagal terhubung ke server';
+      err.classList.remove('hidden');
+    }
+    
+    btn.textContent = 'Kirim Pengajuan →';
+    btn.disabled = false;
+  }
+</script>
+</body>
+</html>

@@ -116,7 +116,6 @@ try { user = JSON.parse(localStorage.getItem('bb_user') || 'null'); } catch(e) {
 const token = localStorage.getItem('bb_token');
 const H = {'Authorization':'Bearer '+token,'Content-Type':'application/json'};
 
-// Nav
 const navRight = document.getElementById('nav-right');
 if (token && user) {
   const isAdmin = ['owner','admin'].includes(user.role);
@@ -229,6 +228,7 @@ async function sc() {
   box.innerHTML += `<div class="flex justify-end"><div class="bg-stone-800 text-white px-3 py-2 rounded-2xl rounded-tr-none text-sm max-w-xs">${msg}</div></div>`;
   ci.value = ''; box.scrollTop = box.scrollHeight;
   box.innerHTML += `<div id="typing2" class="bg-white border border-stone-200 px-3 py-2 rounded-2xl rounded-tl-none text-stone-400 text-sm">...</div>`;
+  box.scrollTop = box.scrollHeight;
   
   try {
     const res = await fetch('/api/chat', {
@@ -246,28 +246,15 @@ async function sc() {
   box.scrollTop = box.scrollHeight;
 }
 
-// Load Data
-async function loadData() {
-  try {
-    if (token) {
-      const fRes = await fetch('/api/favorites', {headers:H});
-      if (fRes.ok) { const fData = await fRes.json(); fData.forEach(f => favorites.add(f.id)); }
-    }
-  } catch(e) { console.error(e); }
-
-  try {
-    const res = await fetch('/api/products');
-    if (!res.ok) throw new Error('API Error');
-    allProducts = await res.json();
-    renderProducts();
-  } catch(err) {
-    document.getElementById('product-grid').innerHTML = `
-      <div class="col-span-4 text-center py-16">
-        <div class="text-4xl mb-3">⚠️</div>
-        <div class="text-red-600 font-bold mb-2">Gagal Terhubung ke Server</div>
-        <div class="text-stone-500 text-sm">Database sedang dimuat atau terjadi error. Silakan refresh halaman.</div>
-      </div>`;
+function loadData() {
+  if (token) {
+    fetch('/api/favorites', {headers:H}).then(r=>r.json()).then(d=>d.forEach(f=>favorites.add(f.id))).catch(e=>{});
   }
+  fetch('/api/products').then(r=>r.json()).then(data=>{
+    allProducts = data; renderProducts();
+  }).catch(e=>{
+    document.getElementById('product-grid').innerHTML = '<div class="col-span-4 text-center py-16 text-stone-400">Tidak ada menu ditemukan.</div>';
+  });
 }
 
 loadData();

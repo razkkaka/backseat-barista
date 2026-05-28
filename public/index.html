@@ -106,10 +106,6 @@
       <div><div class="text-3xl font-bold text-white serif" id="stat-customers">—</div><div class="text-xs text-stone-400 mt-1 tracking-wider uppercase">Pelanggan</div></div>
     </div>
   </div>
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50">
-    <div class="text-xs text-stone-400 tracking-widest uppercase">Scroll</div>
-    <div class="w-px h-10 bg-gradient-to-b from-stone-400 to-transparent"></div>
-  </div>
 </section>
 
 <section class="py-20 bg-white">
@@ -216,7 +212,6 @@ let user = null;
 try { user = JSON.parse(localStorage.getItem('bb_user') || 'null'); } catch(e) { localStorage.removeItem('bb_user'); }
 const token = localStorage.getItem('bb_token');
 
-// Nav
 const navRight = document.getElementById('nav-right');
 if (token && user) {
   const isAdmin = ['owner','admin'].includes(user.role);
@@ -235,15 +230,13 @@ if (token && user) {
 
 function logout() { localStorage.clear(); window.location.href = '/'; }
 
-// Stats
 fetch('/api/stats/public').then(r=>r.json()).then(d => {
   document.getElementById('stat-products').textContent = d.total_products;
   document.getElementById('stat-orders').textContent = d.total_orders;
   document.getElementById('stat-customers').textContent = d.total_customers;
 }).catch(()=>{});
 
-// Bestsellers
-fetch('/api/products?').then(r=>{if(!r.ok)throw new Error('Err'); return r.json()}).then(data => {
+fetch('/api/products').then(r=>r.json()).then(data => {
   const best = data.filter(p => p.is_bestseller).slice(0,4);
   const grid = document.getElementById('bestseller-grid');
   grid.innerHTML = best.map(p => `
@@ -262,7 +255,6 @@ fetch('/api/products?').then(r=>{if(!r.ok)throw new Error('Err'); return r.json(
   document.getElementById('bestseller-grid').innerHTML = '<div class="col-span-4 text-center py-12 text-red-500 font-semibold">⚠️ Gagal memuat data produk. Pastikan server API menyala.</div>';
 });
 
-// Chat
 let chatOpen = false;
 function toggleChat() {
   chatOpen = !chatOpen;
@@ -270,6 +262,7 @@ function toggleChat() {
   document.getElementById('chat-icon').textContent = chatOpen ? '✕' : '☕';
 }
 function quickChat(msg) { document.getElementById('chat-input').value = msg; sendChat(); }
+
 async function sendChat() {
   const input = document.getElementById('chat-input');
   const msg = input.value.trim(); if (!msg) return;
@@ -281,10 +274,10 @@ async function sendChat() {
   box.scrollTop = box.scrollHeight;
   
   try {
-    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg}) });
+    const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) });
     const data = await res.json();
     document.getElementById('typing')?.remove();
-    box.innerHTML += `<div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-sm flex-shrink-0">☕</div><div class="chat-bubble-bot bg-white border border-stone-200 px-3.5 py-2.5 text-sm text-stone-700 shadow-sm max-w-xs">${data.reply || 'Terjadi kesalahan'}</div></div>`;
+    box.innerHTML += `<div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-sm flex-shrink-0">☕</div><div class="chat-bubble-bot bg-white border border-stone-200 px-3.5 py-2.5 text-sm text-stone-700 shadow-sm max-w-xs">${data.reply}</div></div>`;
   } catch (e) {
     document.getElementById('typing')?.remove();
     box.innerHTML += `<div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-sm flex-shrink-0">⚠️</div><div class="chat-bubble-bot bg-white border border-red-200 px-3.5 py-2.5 text-sm text-red-500 shadow-sm max-w-xs">Gagal terhubung ke server AI.</div></div>`;
