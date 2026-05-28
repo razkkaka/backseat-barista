@@ -18,7 +18,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const publicDir = path.join(__dirname, 'public');
 const uploadsDir = path.join(publicDir, 'uploads');
-[publicDir, uploadsDir].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir);
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use(express.static(publicDir));
 
 const storage = multer.diskStorage({
@@ -49,25 +50,21 @@ async function initDb() {
 
   if (!get("SELECT id FROM users WHERE role='owner'")) {
     const hash = bcrypt.hashSync('owner123', 10);
-    run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
+    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Fathia Adhiana', 'fathia@backseat.com', hash, 'owner']);
   }
   if (!get("SELECT id FROM users WHERE role='admin'")) {
     const hash = bcrypt.hashSync('admin123', 10);
-    run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
+    db.run("INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", ['Admin Backseat', 'admin@backseat.com', hash, 'admin']);
   }
 
+  // SEEDER PERSIS SEPERTI ABU FARM
   if (!get("SELECT id FROM products LIMIT 1")) {
     const products = [
-      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli, disajikan dingin. Perpaduan espresso premium dengan susu segar dan gula aren pilihan.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
-      ['Cold Brew Classic', 'Cold brew 12 jam dengan biji kopi pilihan. Rasa bold, smooth, dan segar sempurna untuk hari panas.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
-      ['Caramel Latte', 'Espresso dengan susu steamed dan siroop karamel homemade. Manis, creamy, dan memanjakan lidah.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
-      ['Matcha Latte', 'Matcha grade A dari Jepang dengan susu full cream. Earthy, creamy, dan penuh antioksidan.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
-      ['Thai Tea Special', 'Thai tea otentik dengan campuran rempah pilihan, disajikan dengan susu evaporasi dan es melimpah.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0],
-      ['Taro Milk Tea', 'Minuman talas ungu creamy dengan bubble pearl, cocok untuk semua kalangan.', 24000, 'Non-Kopi', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500', 15, 1, 0],
-      ['Espresso Shot', 'Double shot espresso dari biji kopi single origin Toraja. Intense, bold, dan bersih di palat.', 18000, 'Kopi', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500', 25, 1, 0],
-      ['Chocolate Frappe', 'Blended chocolate dengan whipped cream dan cokelat drizzle. Dessert drink yang menggiurkan.', 32000, 'Non-Kopi', 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500', 10, 1, 0],
-      ['Avocado Coffee', 'Perpaduan unik alpukat creamy dengan espresso. Kaya lemak sehat dan penuh energi.', 35000, 'Kopi', 'https://images.unsplash.com/photo-1592334873219-f6729cbfb501?w=500', 8, 1, 1],
-      ['Lemon Mojito', 'Mocktail segar dengan lemon, mint, dan soda. Pilihan tepat untuk yang tidak suka kafein.', 20000, 'Non-Kopi', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500', 18, 1, 0],
+      ['Iced Palm Sugar Latte', 'Latte manis dengan gula aren asli.', 28000, 'Kopi', 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=500', 15, 1, 1],
+      ['Cold Brew Classic', 'Cold brew 12 jam.', 25000, 'Kopi', 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500', 12, 1, 1],
+      ['Caramel Latte', 'Espresso dengan susu dan karamel.', 30000, 'Kopi', 'https://images.unsplash.com/photo-1572286258217-215cf8e923f1?w=500', 10, 1, 0],
+      ['Matcha Latte', 'Matcha grade A.', 27000, 'Non-Kopi', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500', 8, 1, 1],
+      ['Thai Tea Special', 'Thai tea otentik.', 22000, 'Non-Kopi', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500', 20, 1, 0]
     ];
     for (const p of products) {
       db.run("INSERT INTO products (name,description,price,category,image_url,stock,is_active,is_bestseller) VALUES (?,?,?,?,?,?,?,?)", p);
@@ -75,6 +72,7 @@ async function initDb() {
   }
   saveDb();
 }
+initDb();
 
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -91,8 +89,7 @@ const ownerOnly = (req, res, next) => {
 
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password, phone, address } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ error: 'Nama, email, dan password wajib diisi' });
-  if (password.length < 8) return res.status(400).json({ error: 'Password minimal 8 karakter' });
+  if (!name || !email || !password) return res.status(400).json({ error: 'Semua field wajib diisi' });
   if (get("SELECT id FROM users WHERE email=?", [email])) return res.status(400).json({ error: 'Email sudah terdaftar' });
   run("INSERT INTO users (name,email,password,phone,address) VALUES (?,?,?,?,?)", [name, email, bcrypt.hashSync(password, 10), phone || '', address || '']);
   res.json({ success: true, message: 'Registrasi berhasil' });
@@ -116,16 +113,9 @@ app.post('/api/upload/payment', auth, upload.single('proof'), (req, res) => {
   res.json({ url: '/uploads/' + req.file.filename });
 });
 
+// GET PRODUCTS API PERSIS SEPERTI ABU FARM
 app.get('/api/products', (req, res) => {
-  try {
-    const { category, search } = req.query;
-    let sql = "SELECT * FROM products WHERE is_active=1";
-    const params = [];
-    if (category && category !== 'Semua') { sql += " AND category=?"; params.push(category); }
-    if (search) { sql += " AND name LIKE ?"; params.push('%' + search + '%'); }
-    sql += " ORDER BY is_bestseller DESC, id DESC";
-    res.json(all(sql, params));
-  } catch (error) { res.status(500).json({ error: 'Gagal mengambil data produk' }); }
+  res.json(all("SELECT * FROM products WHERE is_active=1 ORDER BY is_bestseller DESC, id DESC"));
 });
 
 app.get('/api/products/:id', (req, res) => {
@@ -162,8 +152,7 @@ app.post('/api/cart', auth, (req, res) => {
 });
 
 app.put('/api/cart/:id', auth, (req, res) => {
-  const { quantity } = req.body;
-  const qty = parseInt(quantity);
+  const qty = parseInt(req.body.quantity);
   const item = get("SELECT c.*, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.id=? AND c.user_id=?", [req.params.id, req.user.id]);
   if (!item) return res.status(404).json({ error: 'Item tidak ditemukan' });
   if (qty > item.stock) return res.status(400).json({ error: `Stok tidak mencukupi. Tersedia: ${item.stock}` });
@@ -193,10 +182,6 @@ app.post('/api/orders/checkout', auth, (req, res) => {
   const cartItems = all("SELECT c.quantity, p.id, p.name, p.price, p.stock FROM cart c JOIN products p ON c.product_id=p.id WHERE c.user_id=?", [req.user.id]);
   if (!cartItems.length) return res.status(400).json({ error: 'Keranjang masih kosong' });
 
-  for (const item of cartItems) {
-    if (item.quantity > item.stock) return res.status(400).json({ error: `Stok ${item.name} tidak mencukupi` });
-  }
-
   const orderId = 'ORD-' + Date.now().toString().slice(-8);
   const total = cartItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
   run("INSERT INTO orders (order_id, user_id, total_price, delivery_address, notes) VALUES (?,?,?,?,?)", [orderId, req.user.id, total, delivery_address || '', notes || '']);
@@ -210,24 +195,17 @@ app.post('/api/orders/checkout', auth, (req, res) => {
 
 app.get('/api/orders/my', auth, (req, res) => {
   const orders = all("SELECT * FROM orders WHERE user_id=? ORDER BY id DESC", [req.user.id]);
-  const result = orders.map(o => ({
-    ...o,
-    items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id])
-  }));
-  res.json(result);
+  res.json(orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) })));
 });
 
 app.post('/api/orders/:orderId/payment', auth, upload.single('proof'), (req, res) => {
-  const order = get("SELECT * FROM orders WHERE order_id=? AND user_id=?", [req.params.orderId, req.user.id]);
-  if (!order) return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
-  if (!req.file) return res.status(400).json({ error: 'Bukti pembayaran wajib diunggah' });
+  if (!req.file) return res.status(400).json({ error: 'Bukti wajib diunggah' });
   run("UPDATE orders SET payment_proof=?, status='Menunggu Verifikasi', updated_at=CURRENT_TIMESTAMP WHERE order_id=?", ['/uploads/' + req.file.filename, req.params.orderId]);
-  res.json({ success: true, message: 'Bukti pembayaran berhasil diunggah' });
+  res.json({ success: true, message: 'Bukti berhasil diunggah' });
 });
 
 app.post('/api/collaboration', (req, res) => {
   const { business_name, product_type, contact, message } = req.body;
-  if (!business_name || !product_type || !contact) return res.status(400).json({ error: 'Semua kolom wajib diisi' });
   run("INSERT INTO collaborations (business_name, product_type, contact, message) VALUES (?,?,?,?)", [business_name, product_type, contact, message || '']);
   res.json({ success: true, message: 'Pengajuan berhasil dikirim' });
 });
@@ -263,13 +241,11 @@ app.delete('/api/admin/products/:id', ownerOnly, (req, res) => {
 
 app.get('/api/admin/orders', ownerOnly, (req, res) => {
   const orders = all("SELECT o.*, u.name as customer_name, u.email as customer_email, u.phone as customer_phone FROM orders o JOIN users u ON o.user_id=u.id ORDER BY o.id DESC");
-  const result = orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) }));
-  res.json(result);
+  res.json(orders.map(o => ({ ...o, items: all("SELECT * FROM order_items WHERE order_id=?", [o.order_id]) })));
 });
 
 app.put('/api/admin/orders/:orderId/status', ownerOnly, (req, res) => {
-  const { status, reject_reason } = req.body;
-  run("UPDATE orders SET status=?, reject_reason=?, updated_at=CURRENT_TIMESTAMP WHERE order_id=?", [status, reject_reason || null, req.params.orderId]);
+  run("UPDATE orders SET status=?, reject_reason=?, updated_at=CURRENT_TIMESTAMP WHERE order_id=?", [req.body.status, req.body.reject_reason || null, req.params.orderId]);
   res.json({ success: true });
 });
 
@@ -283,48 +259,37 @@ app.get('/api/admin/bestsellers', ownerOnly, (req, res) => {
   res.json(all("SELECT p.name, SUM(oi.quantity) as total_sold FROM order_items oi JOIN products p ON oi.product_id=p.id GROUP BY p.id ORDER BY total_sold DESC LIMIT 5"));
 });
 
-// CHATBOT API (PERSIS SEPERTI ABU FARM)
+// NATIVE FETCH AI CHATBOT PERSIS ABU FARM
 app.post('/api/chat', async (req, res) => {
+  const { message } = req.body;
+  const info = all("SELECT name, price, category, stock FROM products WHERE is_active=1 AND stock > 0");
+  const stokInfo = info.map(t => `${t.name} (Rp${Number(t.price)}, stok:${t.stock})`).join('; ');
+  const prompt = `Kamu adalah BrewBot, asisten virtual Backseat Barista. Jawab ramah dan singkat. Stok tersedia: ${stokInfo}. Pertanyaan: "${message}"`;
+  
   try {
-    const { message } = req.body;
+    const key = process.env.GROQ_API_KEY;
+    if (!key) return res.json({ reply: autoReply(message.toLowerCase()) });
     
-    // Auto Reply Dasar
-    let reply = '';
-    const msg = message.toLowerCase();
-    if (msg.includes('menu') || msg.includes('produk') || msg.includes('apa saja')) {
-      reply = `Berikut menu kami:\n☕ Kopi: Iced Palm Sugar, Cold Brew, Caramel Latte.\n🍵 Non-Kopi: Matcha, Thai Tea, Taro, Lemon Mojito.\nLihat lengkap di halaman Menu! 😊`;
-    } else if (msg.includes('harga') || msg.includes('berapa')) {
-      reply = `Harga minuman mulai dari Rp 18.000 sampai Rp 35.000. 😊`;
-    } else if (msg.includes('pesan') || msg.includes('beli') || msg.includes('cara')) {
-      reply = `Cara pesan: Login -> Pilih Menu -> Keranjang -> Checkout -> Transfer Bank -> Upload Bukti. Tim kami akan segera verifikasi! 🎉`;
-    } else if (msg.includes('bayar') || msg.includes('rekening')) {
-      reply = `BCA: 1234-5678-90\nMandiri: 0987-6543-21\na/n Fathia Adhiana. Upload bukti setelah checkout ya!`;
-    }
-
-    // Call Groq AI API dengan native fetch persis Abu Farm
-    try {
-      const key = process.env.GROQ_API_KEY;
-      if (key && !reply) {
-        const prompt = `Kamu asisten virtual Backseat Barista (Kopi online di Bogor). Jawab ramah & singkat. User: "${message}"`;
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
-          method: 'POST', 
-          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "user", content: prompt }] }) 
-        });
-        const d = await r.json();
-        if(d.choices && d.choices[0]) {
-           reply = d.choices[0].message.content;
-        }
-      }
-    } catch (e) {
-      console.log('AI fallback error:', e);
-    }
-
-    res.json({ reply: reply || 'Maaf, saya kurang mengerti. Coba tanya tentang menu atau cara pesan! 😊' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Chatbot Error' });
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', { 
+      method: 'POST', 
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{ role: "user", content: prompt }] }) 
+    });
+    
+    const d = await r.json();
+    res.json({ reply: d.choices[0].message.content });
+  } catch (e) { 
+    res.json({ reply: autoReply(message.toLowerCase()) }); 
   }
 });
+
+function autoReply(msg) {
+  if (msg.includes('menu') || msg.includes('produk')) return "Menu kami: Iced Palm Sugar, Cold Brew, Matcha Latte, Thai Tea, dan lainnya. Cek menu ya!";
+  if (msg.includes('harga') || msg.includes('berapa')) return "Harga mulai Rp 18.000 hingga Rp 35.000. 😊";
+  if (msg.includes('pesan') || msg.includes('beli')) return "Cara pesan: Login -> Pilih Menu -> Keranjang -> Checkout -> Transfer -> Upload Bukti.";
+  if (msg.includes('bayar') || msg.includes('rekening')) return "BCA: 1234-5678-90 a/n Fathia Adhiana. Jangan lupa upload bukti setelah checkout!";
+  return "Sistem AI sedang sibuk. Terima kasih pertanyaannya! Silakan cek halaman menu untuk info lengkapnya.";
+}
 
 app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 ['menu', 'login', 'register', 'cart', 'orders', 'favorites', 'collaboration', 'admin', 'admin-orders', 'admin-products', 'admin-customers'].forEach(p => {
